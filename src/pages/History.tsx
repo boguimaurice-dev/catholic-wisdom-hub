@@ -40,7 +40,11 @@ export default function History() {
     if (error) {
       toast.error("Erreur lors du chargement de l'historique");
     } else {
-      setConsultations(data || []);
+      setConsultations((data || []).map((d: any) => ({
+        ...d,
+        expert_contributions: d.expert_contributions as any[],
+        selected_experts: d.selected_experts as any[],
+      })));
     }
     setLoading(false);
   };

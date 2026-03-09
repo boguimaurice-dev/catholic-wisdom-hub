@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AgentsGrid } from "@/components/AgentCard";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { consultOrchestrator } from "@/services/orchestrator";
-import { Message, ConsultationResult } from "@/types/consultation";
+import { Message } from "@/types/consultation";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const SUGGESTIONS = [
@@ -17,6 +20,7 @@ const SUGGESTIONS = [
 ];
 
 export default function Index() {
+  const { user, signOut } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +36,18 @@ export default function Index() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, currentPhase]);
+
+  const saveConsultation = async (question: string, result: any) => {
+    if (!user) return;
+    await supabase.from("consultations").insert({
+      user_id: user.id,
+      question,
+      synthesis: result.synthesis,
+      expert_contributions: result.expertContributions,
+      selected_experts: result.analysis.selectedExperts,
+      analysis_reason: result.analysis.reason,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +88,9 @@ export default function Index() {
             consultationResult: result,
           },
         ]);
+
+        // Save to database
+        await saveConsultation(question, result);
       } else {
         throw new Error(result.error || "Erreur lors de la consultation");
       }
@@ -100,36 +119,41 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="relative overflow-hidden bg-primary text-primary-foreground py-5 px-4">
+      <header className="relative overflow-hidden bg-primary text-primary-foreground py-4 px-4">
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
-                <Cross className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
+              <div className="w-10 h-10 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
+                <Cross className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <h1 className="font-serif text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">
+                <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
                   Assistant Catholique
                 </h1>
-                <p className="text-xs sm:text-sm opacity-80 hidden sm:block font-light">
-                  Votre guide érudit · 8 experts à votre service
+                <p className="text-xs opacity-80 hidden sm:block font-light">
+                  8 experts à votre service
                 </p>
               </div>
             </div>
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetConversation}
-                className="text-primary-foreground hover:bg-primary-foreground/10 border border-primary-foreground/20"
-              >
-                <RotateCcw className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">Nouvelle consultation</span>
+            <div className="flex items-center gap-2">
+              <Link to="/history">
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Historique</span>
+                </Button>
+              </Link>
+              {messages.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={resetConversation} className="text-primary-foreground hover:bg-primary-foreground/10">
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+                <LogOut className="w-4 h-4" />
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </header>
@@ -158,11 +182,9 @@ export default function Index() {
               </h2>
               <div className="ornament" />
               <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base px-4 leading-relaxed">
-                Posez votre question sur la foi catholique. Nos 8 experts en théologie,
-                liturgie, spiritualité, histoire, Bible, exégèse, patristique et vie monastique
-                sont à votre service.
+                Posez votre question sur la foi catholique. Nos 8 experts sont à votre service.
               </p>
-              <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
                 {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
@@ -183,9 +205,7 @@ export default function Index() {
                     key={idx}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`${
-                      message.role === "user" ? "ml-auto max-w-[85%] sm:max-w-[75%]" : "max-w-full"
-                    }`}
+                    className={`${message.role === "user" ? "ml-auto max-w-[85%] sm:max-w-[75%]" : "max-w-full"}`}
                   >
                     {message.role === "user" ? (
                       <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
@@ -205,7 +225,6 @@ export default function Index() {
                 ))}
               </AnimatePresence>
 
-              {/* Loading state */}
               {isLoading && currentPhase && (
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
@@ -216,9 +235,7 @@ export default function Index() {
                     <div className="w-8 h-8 rounded-full bg-secondary/15 flex items-center justify-center">
                       <Loader2 className="w-4 h-4 animate-spin text-secondary" />
                     </div>
-                    <span className="text-sm sm:text-base text-foreground font-medium">
-                      {currentPhase}
-                    </span>
+                    <span className="text-sm sm:text-base text-foreground font-medium">{currentPhase}</span>
                   </div>
                 </motion.div>
               )}
@@ -245,16 +262,8 @@ export default function Index() {
               }}
               disabled={isLoading}
             />
-            <Button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="h-11 px-4 sm:px-5 bg-primary hover:bg-primary/90 shadow-md"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
+            <Button type="submit" disabled={isLoading || !input.trim()} className="h-11 px-4 sm:px-5 shadow-md">
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </Button>
           </div>
         </form>
