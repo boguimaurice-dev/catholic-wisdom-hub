@@ -187,31 +187,26 @@ export default function Index() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center py-10 sm:py-20"
+                className="text-center py-8 sm:py-14"
               >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
-                  <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/50" />
-                </div>
-                <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-3">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                  className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/15 to-secondary/15 border-2 border-secondary/30 flex items-center justify-center shadow-lg"
+                >
+                  <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/60" />
+                </motion.div>
+                <h2 className="font-serif text-2xl sm:text-4xl text-primary mb-2 tracking-wide">
                   Bienvenue, cher ami
                 </h2>
                 <div className="ornament" />
-                <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base px-4 leading-relaxed">
-                  Posez votre question sur la foi catholique. Nos 8 experts sont à votre service.
+                <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4 leading-relaxed">
+                  Explorez la richesse de la foi catholique avec nos <span className="text-secondary font-semibold">8 experts</span> à votre service.
                 </p>
-                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
-                  {SUGGESTIONS.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      onClick={() => setInput(suggestion)}
-                      className="p-3.5 text-left text-sm bg-card rounded-xl border border-border hover:border-secondary hover:shadow-md transition-all group"
-                    >
-                      <span className="text-secondary mr-2 group-hover:mr-3 transition-all">→</span>
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
               </motion.div>
+
+              <ThemeCards onSelectSuggestion={setInput} />
               <FAQ />
             </>
           ) : (
