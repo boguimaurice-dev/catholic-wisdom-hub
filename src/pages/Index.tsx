@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, User } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AgentsGrid } from "@/components/AgentCard";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
+import { FAQ } from "@/components/FAQ";
 import { consultOrchestrator } from "@/services/orchestrator";
 import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -28,6 +30,9 @@ export default function Index() {
   const [consultedExperts, setConsultedExperts] = useState<string[]>([]);
   const [currentPhase, setCurrentPhase] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { isListening, startListening, stopListening } = useVoiceInput();
+  const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,7 +94,6 @@ export default function Index() {
           },
         ]);
 
-        // Save to database
         await saveConsultation(question, result);
       } else {
         throw new Error(result.error || "Erreur lors de la consultation");
@@ -114,6 +118,15 @@ export default function Index() {
     setMessages([]);
     setConsultedExperts([]);
     setActiveExperts([]);
+    stopSpeaking();
+  };
+
+  const handleVoiceInput = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening((text) => setInput(text));
+    }
   };
 
   return (
@@ -169,34 +182,37 @@ export default function Index() {
       <main className="flex-1 overflow-y-auto pb-36">
         <div className="max-w-4xl mx-auto p-4">
           {messages.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-10 sm:py-20"
-            >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
-                <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/50" />
-              </div>
-              <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-3">
-                Bienvenue, cher ami
-              </h2>
-              <div className="ornament" />
-              <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base px-4 leading-relaxed">
-                Posez votre question sur la foi catholique. Nos 8 experts sont à votre service.
-              </p>
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => setInput(suggestion)}
-                    className="p-3.5 text-left text-sm bg-card rounded-xl border border-border hover:border-secondary hover:shadow-md transition-all group"
-                  >
-                    <span className="text-secondary mr-2 group-hover:mr-3 transition-all">→</span>
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-10 sm:py-20"
+              >
+                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+                  <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/50" />
+                </div>
+                <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-3">
+                  Bienvenue, cher ami
+                </h2>
+                <div className="ornament" />
+                <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base px-4 leading-relaxed">
+                  Posez votre question sur la foi catholique. Nos 8 experts sont à votre service.
+                </p>
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
+                  {SUGGESTIONS.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="p-3.5 text-left text-sm bg-card rounded-xl border border-border hover:border-secondary hover:shadow-md transition-all group"
+                    >
+                      <span className="text-secondary mr-2 group-hover:mr-3 transition-all">→</span>
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+              <FAQ />
+            </>
           ) : (
             <div className="space-y-5">
               <AnimatePresence>
@@ -212,13 +228,32 @@ export default function Index() {
                         <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
-                      <ConsultationDocument
-                        result={message.consultationResult}
-                        question={messages[idx - 1]?.content || ""}
-                      />
+                      <div className="relative group">
+                        <ConsultationDocument
+                          result={message.consultationResult}
+                          question={messages[idx - 1]?.content || ""}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
+                          title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
+                        >
+                          {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     ) : (
-                      <div className="bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
+                      <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
                         <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-primary"
+                        >
+                          {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                        </Button>
                       </div>
                     )}
                   </motion.div>
@@ -249,10 +284,21 @@ export default function Index() {
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-end">
+            <Button
+              type="button"
+              variant={isListening ? "destructive" : "outline"}
+              size="icon"
+              onClick={handleVoiceInput}
+              disabled={isLoading}
+              className={`h-11 w-11 shrink-0 ${isListening ? "animate-pulse" : ""}`}
+              title={isListening ? "Arrêter l'écoute" : "Dicter votre question"}
+            >
+              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Posez votre question sur la foi catholique…"
+              placeholder={isListening ? "🎙️ Parlez maintenant…" : "Posez votre question sur la foi catholique…"}
               className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
