@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AgentsGrid } from "@/components/AgentCard";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { FAQ } from "@/components/FAQ";
+import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
 import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
