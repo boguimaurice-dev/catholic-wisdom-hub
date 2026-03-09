@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
+type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+
 export function useVoiceInput() {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const startListening = useCallback((onResult: (text: string) => void) => {
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("La reconnaissance vocale n'est pas supportée par votre navigateur.");
       return;
