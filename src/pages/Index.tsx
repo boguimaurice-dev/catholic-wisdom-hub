@@ -168,6 +168,7 @@ export default function Index() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
