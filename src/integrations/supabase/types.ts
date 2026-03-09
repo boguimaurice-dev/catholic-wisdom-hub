@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      consultations: {
+        Row: {
+          analysis_reason: string | null
+          created_at: string
+          expert_contributions: Json
+          id: string
+          question: string
+          selected_experts: Json
+          synthesis: string
+          user_id: string
+        }
+        Insert: {
+          analysis_reason?: string | null
+          created_at?: string
+          expert_contributions?: Json
+          id?: string
+          question: string
+          selected_experts?: Json
+          synthesis: string
+          user_id: string
+        }
+        Update: {
+          analysis_reason?: string | null
+          created_at?: string
+          expert_contributions?: Json
+          id?: string
+          question?: string
+          selected_experts?: Json
+          synthesis?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
