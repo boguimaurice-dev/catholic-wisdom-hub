@@ -15,12 +15,6 @@ import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const SUGGESTIONS = [
-  "Qu'est-ce que la Trinité ?",
-  "Comment prier le chapelet ?",
-  "Que disent les Pères de l'Église sur l'Eucharistie ?",
-  "Quelle est la vie quotidienne d'un moine bénédictin ?",
-];
 
 export default function Index() {
   const { user, signOut } = useAuth();
