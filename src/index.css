@@ -6,27 +6,28 @@
 
 @layer base {
   :root {
-    --background: 45 29% 97%;
-    --foreground: 25 30% 15%;
-    --card: 45 29% 95%;
-    --card-foreground: 25 30% 15%;
-    --popover: 45 29% 95%;
-    --popover-foreground: 25 30% 15%;
-    --primary: 25 59% 30%;
-    --primary-foreground: 45 29% 97%;
-    --secondary: 43 74% 49%;
-    --secondary-foreground: 25 30% 15%;
-    --muted: 45 20% 88%;
-    --muted-foreground: 25 20% 45%;
-    --accent: 174 42% 35%;
-    --accent-foreground: 45 29% 97%;
+    --background: 40 33% 96%;
+    --foreground: 20 25% 12%;
+    --card: 40 30% 94%;
+    --card-foreground: 20 25% 12%;
+    --popover: 40 30% 94%;
+    --popover-foreground: 20 25% 12%;
+    --primary: 20 60% 24%;
+    --primary-foreground: 40 33% 96%;
+    --secondary: 40 80% 50%;
+    --secondary-foreground: 20 25% 12%;
+    --muted: 40 18% 86%;
+    --muted-foreground: 20 15% 42%;
+    --accent: 0 55% 38%;
+    --accent-foreground: 40 33% 96%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 25 30% 82%;
-    --input: 25 30% 82%;
-    --ring: 25 59% 30%;
+    --border: 30 25% 80%;
+    --input: 30 25% 80%;
+    --ring: 40 80% 50%;
     --radius: 0.75rem;
-    --cream: 45 29% 95%;
+    --cream: 40 33% 94%;
+    --gold-glow: 40 80% 50%;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -38,26 +39,27 @@
   }
 
   .dark {
-    --background: 25 20% 10%;
-    --foreground: 45 29% 95%;
-    --card: 25 20% 12%;
-    --card-foreground: 45 29% 95%;
-    --popover: 25 20% 12%;
-    --popover-foreground: 45 29% 95%;
-    --primary: 43 74% 49%;
-    --primary-foreground: 25 30% 10%;
-    --secondary: 25 59% 35%;
-    --secondary-foreground: 45 29% 95%;
-    --muted: 25 20% 20%;
-    --muted-foreground: 45 20% 65%;
-    --accent: 174 42% 45%;
-    --accent-foreground: 25 30% 10%;
+    --background: 20 18% 8%;
+    --foreground: 40 30% 92%;
+    --card: 20 18% 11%;
+    --card-foreground: 40 30% 92%;
+    --popover: 20 18% 11%;
+    --popover-foreground: 40 30% 92%;
+    --primary: 40 80% 50%;
+    --primary-foreground: 20 18% 8%;
+    --secondary: 20 60% 30%;
+    --secondary-foreground: 40 30% 92%;
+    --muted: 20 15% 18%;
+    --muted-foreground: 40 18% 60%;
+    --accent: 0 55% 45%;
+    --accent-foreground: 40 30% 92%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 25 20% 25%;
-    --input: 25 20% 25%;
-    --ring: 43 74% 49%;
-    --cream: 25 20% 15%;
+    --border: 20 15% 22%;
+    --input: 20 15% 22%;
+    --ring: 40 80% 50%;
+    --cream: 20 15% 14%;
+    --gold-glow: 40 80% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -88,24 +90,30 @@
   .bg-cream {
     background-color: hsl(var(--cream));
   }
+  .text-gold {
+    color: hsl(var(--gold-glow));
+  }
+  .border-gold {
+    border-color: hsl(var(--gold-glow));
+  }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.5);
-  border-radius: 4px;
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.7);
+  background: hsl(var(--primary) / 0.5);
 }
 
 /* Prose styling for markdown */
@@ -115,12 +123,24 @@
   --tw-prose-links: hsl(var(--accent));
   --tw-prose-bold: hsl(var(--primary));
   --tw-prose-quotes: hsl(var(--primary) / 0.8);
-  --tw-prose-quote-borders: hsl(var(--secondary));
+  --tw-prose-quote-borders: hsl(var(--gold-glow));
 }
 
 .prose blockquote {
-  border-left-color: hsl(var(--secondary));
+  border-left-color: hsl(var(--gold-glow));
   background-color: hsl(var(--cream));
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+}
+
+/* Ornamental divider */
+.ornament::after {
+  content: "✦";
+  display: block;
+  text-align: center;
+  color: hsl(var(--gold-glow));
+  font-size: 1.25rem;
+  margin: 1rem 0;
+  letter-spacing: 0.5em;
 }

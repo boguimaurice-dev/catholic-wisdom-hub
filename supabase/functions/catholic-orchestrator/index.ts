@@ -170,6 +170,8 @@ EXPERTS DISPONIBLES:
 - historien: Professeur Henri Marrou - Histoire de l'Église, conciles, papes
 - bibliste: Père Raymond Brown - Exégèse, études bibliques, théologie biblique
 - linguiste: Abbé Marcel Jousse - Langues bibliques, étymologie, traduction
+- patristique: Père Irénée de Lyon - Pères de l'Église, patristique, Tradition apostolique
+- monastique: Dom Guéranger - Vie monastique, ordres religieux, vie consacrée
 
 Analyse cette question et détermine quels experts consulter (1 à 3 maximum selon pertinence).
 Réponds UNIQUEMENT avec un JSON valide de cette forme:
