@@ -125,7 +125,16 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      {/* Decorative background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23996633' fill-opacity='1'%3E%3Cpath d='M40 10v20h-4V10h4zm0 40v20h-4V50h4zM20 30v20h-4V30h4zm40 0v20h-4V30h4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-secondary/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/3 blur-3xl" />
+      </div>
       {/* Header */}
       <header className="relative overflow-hidden bg-primary text-primary-foreground py-4 px-4">
         <div className="absolute inset-0 opacity-10" style={{
