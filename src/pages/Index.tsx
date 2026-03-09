@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AgentsGrid } from "@/components/AgentCard";
@@ -8,6 +8,13 @@ import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { consultOrchestrator } from "@/services/orchestrator";
 import { Message, ConsultationResult } from "@/types/consultation";
 import { toast } from "sonner";
+
+const SUGGESTIONS = [
+  "Qu'est-ce que la Trinité ?",
+  "Comment prier le chapelet ?",
+  "Que disent les Pères de l'Église sur l'Eucharistie ?",
+  "Quelle est la vie quotidienne d'un moine bénédictin ?",
+];
 
 export default function Index() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,27 +45,23 @@ export default function Index() {
     setConsultedExperts([]);
 
     try {
-      setCurrentPhase("Analyse de la question par Monseigneur l'Orchestrateur...");
-      
-      // Simulate phase progression for UX
-      setTimeout(() => setCurrentPhase("Sélection des experts pertinents..."), 1000);
+      setCurrentPhase("Analyse de la question par Monseigneur l'Orchestrateur…");
+      setTimeout(() => setCurrentPhase("Sélection des experts pertinents…"), 1000);
 
       const result = await consultOrchestrator(question, messages);
 
       if (result.success) {
-        // Show which experts are being consulted
-        const expertKeys = result.analysis.selectedExperts.map(e => e.key);
+        const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
         setActiveExperts(expertKeys);
-        setCurrentPhase(`Consultation de ${expertKeys.length} expert(s)...`);
+        setCurrentPhase(`Consultation de ${expertKeys.length} expert(s)…`);
 
-        // Animate experts being consulted
         for (const key of expertKeys) {
-          await new Promise(r => setTimeout(r, 500));
-          setConsultedExperts(prev => [...prev, key]);
+          await new Promise((r) => setTimeout(r, 500));
+          setConsultedExperts((prev) => [...prev, key]);
         }
 
-        setCurrentPhase("Synthèse en cours...");
-        await new Promise(r => setTimeout(r, 800));
+        setCurrentPhase("Synthèse en cours…");
+        await new Promise((r) => setTimeout(r, 800));
 
         setMessages((prev) => [
           ...prev,
@@ -97,17 +100,22 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary via-primary/90 to-primary text-white py-4 px-4 shadow-lg">
-        <div className="max-w-6xl mx-auto">
+      <header className="relative overflow-hidden bg-primary text-primary-foreground py-5 px-4">
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-3xl sm:text-4xl">✝️</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
+                <Cross className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
+              </div>
               <div>
-                <h1 className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold">
+                <h1 className="font-serif text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">
                   Assistant Catholique
                 </h1>
-                <p className="text-xs sm:text-sm opacity-90 hidden sm:block">
-                  Votre guide érudit pour explorer la foi catholique
+                <p className="text-xs sm:text-sm opacity-80 hidden sm:block font-light">
+                  Votre guide érudit · 8 experts à votre service
                 </p>
               </div>
             </div>
@@ -116,10 +124,10 @@ export default function Index() {
                 variant="ghost"
                 size="sm"
                 onClick={resetConversation}
-                className="text-white hover:bg-white/20"
+                className="text-primary-foreground hover:bg-primary-foreground/10 border border-primary-foreground/20"
               >
                 <RotateCcw className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">Nouvelle</span>
+                <span className="hidden sm:inline">Nouvelle consultation</span>
               </Button>
             )}
           </div>
@@ -127,51 +135,48 @@ export default function Index() {
       </header>
 
       {/* Agents Grid */}
-      <div className="bg-cream border-b border-primary/20 py-3 px-4">
+      <div className="bg-cream border-b border-border py-3 px-4">
         <div className="max-w-6xl mx-auto">
-          <AgentsGrid 
-            activeExperts={activeExperts} 
-            consultedExperts={consultedExperts} 
-          />
+          <AgentsGrid activeExperts={activeExperts} consultedExperts={consultedExperts} />
         </div>
       </div>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto pb-32">
+      <main className="flex-1 overflow-y-auto pb-36">
         <div className="max-w-4xl mx-auto p-4">
           {messages.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8 sm:py-16"
+              className="text-center py-10 sm:py-20"
             >
-              <BookOpen className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-primary/40 mb-4" />
-              <h2 className="font-serif text-xl sm:text-2xl text-primary mb-2">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+                <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/50" />
+              </div>
+              <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-3">
                 Bienvenue, cher ami
               </h2>
-              <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4">
-                Posez votre question sur la foi catholique. Nos experts en théologie, 
-                liturgie, spiritualité, histoire, Bible et exégèse sont à votre service.
+              <div className="ornament" />
+              <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base px-4 leading-relaxed">
+                Posez votre question sur la foi catholique. Nos 8 experts en théologie,
+                liturgie, spiritualité, histoire, Bible, exégèse, patristique et vie monastique
+                sont à votre service.
               </p>
-              <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto px-4">
-                {[
-                  "Qu'est-ce que la Trinité ?",
-                  "Comment prier le chapelet ?",
-                  "Que signifie l'Eucharistie ?",
-                  "Qui est Saint Augustin ?",
-                ].map((suggestion) => (
+              <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
+                {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => setInput(suggestion)}
-                    className="p-3 text-left text-sm bg-white rounded-lg border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                    className="p-3.5 text-left text-sm bg-card rounded-xl border border-border hover:border-secondary hover:shadow-md transition-all group"
                   >
+                    <span className="text-secondary mr-2 group-hover:mr-3 transition-all">→</span>
                     {suggestion}
                   </button>
                 ))}
               </div>
             </motion.div>
           ) : (
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-5">
               <AnimatePresence>
                 {messages.map((message, idx) => (
                   <motion.div
@@ -179,12 +184,12 @@ export default function Index() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`${
-                      message.role === "user" ? "ml-auto max-w-[85%] sm:max-w-[80%]" : "max-w-full"
+                      message.role === "user" ? "ml-auto max-w-[85%] sm:max-w-[75%]" : "max-w-full"
                     }`}
                   >
                     {message.role === "user" ? (
-                      <div className="bg-primary text-white p-3 sm:p-4 rounded-2xl rounded-br-sm">
-                        <p className="text-sm sm:text-base">{message.content}</p>
+                      <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
+                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
                       <ConsultationDocument
@@ -192,8 +197,8 @@ export default function Index() {
                         question={messages[idx - 1]?.content || ""}
                       />
                     ) : (
-                      <div className="bg-white border border-primary/20 p-3 sm:p-4 rounded-2xl rounded-bl-sm">
-                        <p className="text-sm sm:text-base">{message.content}</p>
+                      <div className="bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
+                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
                       </div>
                     )}
                   </motion.div>
@@ -203,13 +208,15 @@ export default function Index() {
               {/* Loading state */}
               {isLoading && currentPhase && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="bg-primary/10 border border-primary/30 p-4 rounded-xl"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card border border-secondary/30 p-4 rounded-xl shadow-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    <span className="text-sm sm:text-base text-primary font-medium">
+                    <div className="w-8 h-8 rounded-full bg-secondary/15 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin text-secondary" />
+                    </div>
+                    <span className="text-sm sm:text-base text-foreground font-medium">
                       {currentPhase}
                     </span>
                   </div>
@@ -221,15 +228,15 @@ export default function Index() {
         </div>
       </main>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-primary/20 p-3 sm:p-4">
+      {/* Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3 items-end">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Posez votre question sur la foi catholique..."
-              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base"
+              placeholder="Posez votre question sur la foi catholique…"
+              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -241,7 +248,7 @@ export default function Index() {
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="h-auto px-4 sm:px-6"
+              className="h-11 px-4 sm:px-5 bg-primary hover:bg-primary/90 shadow-md"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

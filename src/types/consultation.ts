@@ -74,4 +74,18 @@ export const EXPERTS_CONFIG: Record<string, Expert> = {
     icon: "🔤",
     color: "bg-teal-100 border-teal-400 text-teal-900",
   },
+  patristique: {
+    key: "patristique",
+    name: "Père Irénée de Lyon",
+    title: "Patrologue",
+    icon: "📜",
+    color: "bg-orange-100 border-orange-400 text-orange-900",
+  },
+  monastique: {
+    key: "monastique",
+    name: "Dom Guéranger",
+    title: "Vie monastique",
+    icon: "🏛️",
+    color: "bg-emerald-100 border-emerald-400 text-emerald-900",
+  },
 };
