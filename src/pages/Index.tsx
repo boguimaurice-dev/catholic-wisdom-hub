@@ -56,6 +56,11 @@ export default function Index() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    if (!canConsult()) {
+      toast.error(`Vous avez atteint la limite de ${currentPlan?.max_consultations_per_day || 3} consultations/jour. Passez à un plan supérieur !`);
+      return;
+    }
+
     const question = input.trim();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: question }]);
