@@ -281,7 +281,7 @@ Format ta réponse en markdown avec une belle mise en page.`;
     const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ], "google/gemini-2.5-pro");
+    ], "claude-sonnet-4-20250514");
 
     return jsonResponse({
       success: true,
