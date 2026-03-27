@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, CreditCard } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { consultOrchestrator } from "@/services/orchestrator";
 import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ export default function Index() {
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
+  const { currentPlan, canConsult, incrementUsage, remainingConsultations } = useSubscription();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,6 +55,13 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    if (!canConsult()) {
+      toast.error("Limite de consultations atteinte. Passez à un plan supérieur !", {
+        action: { label: "Voir les plans", onClick: () => window.location.href = "/pricing" },
+      });
+      return;
+    }
 
     const question = input.trim();
     setInput("");
@@ -91,6 +100,7 @@ export default function Index() {
         ]);
 
         await saveConsultation(question, result);
+        await incrementUsage();
       } else {
         throw new Error(result.error || "Erreur lors de la consultation");
       }
@@ -159,6 +169,12 @@ export default function Index() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link to="/pricing">
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                  <CreditCard className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Plans</span>
+                </Button>
+              </Link>
               <Link to="/history">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <History className="w-4 h-4" />

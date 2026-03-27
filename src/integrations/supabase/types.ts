@@ -47,6 +47,69 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_usage: {
+        Row: {
+          consultation_count: number
+          id: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          consultation_count?: number
+          id?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          consultation_count?: number
+          id?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          created_at: string
+          currency: string
+          features: Json
+          id: string
+          interval: string
+          is_active: boolean
+          max_consultations_per_day: number
+          name: string
+          paystack_plan_code: string | null
+          price_amount: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          features?: Json
+          id?: string
+          interval?: string
+          is_active?: boolean
+          max_consultations_per_day?: number
+          name: string
+          paystack_plan_code?: string | null
+          price_amount?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          features?: Json
+          id?: string
+          interval?: string
+          is_active?: boolean
+          max_consultations_per_day?: number
+          name?: string
+          paystack_plan_code?: string | null
+          price_amount?: number
+          slug?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -70,6 +133,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          paystack_customer_code: string | null
+          paystack_subscription_code: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          paystack_customer_code?: string | null
+          paystack_subscription_code?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          paystack_customer_code?: string | null
+          paystack_subscription_code?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
