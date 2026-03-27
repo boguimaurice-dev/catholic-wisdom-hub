@@ -15,6 +15,7 @@ export interface ExpertContribution {
 
 export interface ConsultationResult {
   success: boolean;
+  errorType?: string;
   analysis: {
     selectedExperts: Expert[];
     reason: string;
