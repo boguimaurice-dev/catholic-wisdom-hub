@@ -13,6 +13,7 @@ import { consultOrchestrator } from "@/services/orchestrator";
 import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
