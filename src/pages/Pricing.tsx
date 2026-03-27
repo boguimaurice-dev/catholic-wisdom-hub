@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, Zap, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useEffect } from "react";
 
 const planIcons: Record<string, React.ReactNode> = {
   basique: <Zap className="w-6 h-6" />,
@@ -27,7 +26,6 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Verify payment on return from Paystack
   useEffect(() => {
     const reference = searchParams.get("reference");
     if (reference) {
@@ -101,7 +99,15 @@ export default function Pricing() {
             </Link>
             <h1 className="font-serif text-lg sm:text-2xl font-bold">Abonnements</h1>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Link to="/donation">
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Heart className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">Soutenir</span>
+              </Button>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -196,6 +202,18 @@ export default function Pricing() {
             </p>
           </div>
         )}
+
+        <div className="mt-12 text-center">
+          <Link to="/donation">
+            <Button variant="outline" size="lg" className="gap-2">
+              <Heart className="w-5 h-5 text-destructive" />
+              Soutenir le Monastère Sainte Marie de Bouaké
+            </Button>
+          </Link>
+          <p className="text-xs text-muted-foreground mt-2">
+            Participez librement aux œuvres de la communauté monastique
+          </p>
+        </div>
       </main>
     </div>
   );
