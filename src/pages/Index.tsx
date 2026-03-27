@@ -162,10 +162,10 @@ export default function Index() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link to="/pricing">
+              <Link to="/donation">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-                  <CreditCard className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Plans</span>
+                  <Heart className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Soutenir</span>
                 </Button>
               </Link>
               <Link to="/history">
