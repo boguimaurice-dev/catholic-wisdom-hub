@@ -100,6 +100,7 @@ export default function Index() {
         ]);
 
         await saveConsultation(question, result);
+        await incrementUsage();
       } else {
         throw new Error(result.error || "Erreur lors de la consultation");
       }
