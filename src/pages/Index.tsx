@@ -56,6 +56,13 @@ export default function Index() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    if (!canConsult()) {
+      toast.error("Limite de consultations atteinte. Passez à un plan supérieur !", {
+        action: { label: "Voir les plans", onClick: () => window.location.href = "/pricing" },
+      });
+      return;
+    }
+
     const question = input.trim();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: question }]);
