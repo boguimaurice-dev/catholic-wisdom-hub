@@ -152,13 +152,15 @@ async function callAI(messages: Message[], model = "google/gemini-2.5-flash"): P
 
   if (!response.ok) {
     const error = await response.text();
-    console.error("AI Gateway error:", response.status, error);
     if (response.status === 429) {
+      console.warn("AI Gateway rate limit:", error);
       throw new HttpError(429, "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
     }
     if (response.status === 402) {
+      console.warn("AI Gateway payment required:", error);
       throw new HttpError(402, "Crédits Lovable AI épuisés. Rechargez l'espace de travail puis réessayez.");
     }
+    console.error("AI Gateway error:", response.status, error);
     throw new HttpError(response.status, `AI error: ${response.status}`);
   }
 
@@ -285,6 +287,15 @@ Format ta réponse en markdown avec une belle mise en page.`;
     });
 
   } catch (error) {
+    if (error instanceof HttpError && (error.status === 402 || error.status === 429)) {
+      console.warn("Orchestrator handled limit:", error.message);
+      return jsonResponse({
+        error: error.message,
+        errorType: error.status === 402 ? "payment_required" : "rate_limit",
+        success: false
+      });
+    }
+
     console.error("Orchestrator error:", error);
     const status = error instanceof HttpError ? error.status : 500;
     return jsonResponse({
