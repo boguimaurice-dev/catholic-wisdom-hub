@@ -95,12 +95,14 @@ export default function Index() {
         throw new Error(result.error || "Erreur lors de la consultation");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Une erreur est survenue");
+      const message = error instanceof Error ? error.message : "Une erreur est survenue";
+
+      toast.error(message);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Je suis désolé, une erreur est survenue lors de la consultation. Veuillez réessayer.",
+          content: message,
         },
       ]);
     } finally {

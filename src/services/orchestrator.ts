@@ -22,13 +22,20 @@ export async function consultOrchestrator(
   });
 
   if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = typeof errorData.error === "string" ? errorData.error : "";
+
     if (response.status === 429) {
       throw new Error("Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
     }
     if (response.status === 402) {
       throw new Error("Crédits épuisés. Veuillez recharger votre compte.");
     }
-    const errorData = await response.json().catch(() => ({}));
+
+    if (/payment required|not enough credits/i.test(errorMessage)) {
+      throw new Error("Crédits épuisés. Veuillez recharger votre compte.");
+    }
+
     throw new Error(errorData.error || "Erreur lors de la consultation");
   }
 
