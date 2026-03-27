@@ -116,9 +116,26 @@ interface Message {
   content: string;
 }
 
+class HttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function callAI(messages: Message[], model = "google/gemini-2.5-flash"): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+  if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -136,9 +153,13 @@ async function callAI(messages: Message[], model = "google/gemini-2.5-flash"): P
   if (!response.ok) {
     const error = await response.text();
     console.error("AI Gateway error:", response.status, error);
-    if (response.status === 429) throw new Error("Rate limit exceeded");
-    if (response.status === 402) throw new Error("Payment required");
-    throw new Error(`AI error: ${response.status}`);
+    if (response.status === 429) {
+      throw new HttpError(429, "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
+    }
+    if (response.status === 402) {
+      throw new HttpError(402, "Crédits Lovable AI épuisés. Rechargez l'espace de travail puis réessayez.");
+    }
+    throw new HttpError(response.status, `AI error: ${response.status}`);
   }
 
   const data = await response.json();
@@ -154,10 +175,7 @@ serve(async (req) => {
     const { question, conversationHistory = [] } = await req.json();
 
     if (!question) {
-      return new Response(
-        JSON.stringify({ error: "Question requise" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "Question requise" }, 400);
     }
 
     // Phase 1: Analyse par l'Orchestrateur
@@ -253,30 +271,25 @@ Format ta réponse en markdown avec une belle mise en page.`;
       { role: "user", content: "Crée la synthèse" }
     ], "google/gemini-2.5-pro");
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        analysis: {
-          selectedExperts: selectedExperts.map(key => ({
-            key,
-            ...EXPERTS[key as keyof typeof EXPERTS]
-          })),
-          reason: analyseRaison
-        },
-        expertContributions: expertResponses,
-        synthesis: syntheseResponse
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({
+      success: true,
+      analysis: {
+        selectedExperts: selectedExperts.map(key => ({
+          key,
+          ...EXPERTS[key as keyof typeof EXPERTS]
+        })),
+        reason: analyseRaison
+      },
+      expertContributions: expertResponses,
+      synthesis: syntheseResponse
+    });
 
   } catch (error) {
     console.error("Orchestrator error:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Erreur inconnue",
-        success: false
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const status = error instanceof HttpError ? error.status : 500;
+    return jsonResponse({
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+      success: false
+    }, status);
   }
 });
