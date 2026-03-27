@@ -133,39 +133,49 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
-async function callAI(messages: Message[], model = "google/gemini-2.5-flash"): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
+async function callAI(messages: Message[], model = "claude-sonnet-4-20250514"): Promise<string> {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) throw new HttpError(500, "ANTHROPIC_API_KEY not configured");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // Séparer le system prompt des messages
+  const systemMessage = messages.find(m => m.role === "system");
+  const otherMessages = messages.filter(m => m.role !== "system");
+
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: 4096,
+    messages: otherMessages.map(m => ({ role: m.role, content: m.content })),
+  };
+  if (systemMessage) {
+    body.system = systemMessage.content;
+  }
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: false,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const error = await response.text();
     if (response.status === 429) {
-      console.warn("AI Gateway rate limit:", error);
+      console.warn("Anthropic rate limit:", error);
       throw new HttpError(429, "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
     }
-    if (response.status === 402) {
-      console.warn("AI Gateway payment required:", error);
-      throw new HttpError(402, "Crédits Lovable AI épuisés. Rechargez l'espace de travail puis réessayez.");
+    if (response.status === 402 || response.status === 400) {
+      console.warn("Anthropic error:", error);
+      throw new HttpError(response.status, `Erreur Anthropic: ${response.status}`);
     }
-    console.error("AI Gateway error:", response.status, error);
-    throw new HttpError(response.status, `AI error: ${response.status}`);
+    console.error("Anthropic error:", response.status, error);
+    throw new HttpError(response.status, `Erreur IA: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content || "";
+  return data.content?.[0]?.text || "";
 }
 
 serve(async (req) => {
@@ -271,7 +281,7 @@ Format ta réponse en markdown avec une belle mise en page.`;
     const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ], "google/gemini-2.5-pro");
+    ], "claude-sonnet-4-20250514");
 
     return jsonResponse({
       success: true,
