@@ -281,14 +281,15 @@ export default function Index() {
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
                         <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-primary"
-                        >
-                          {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                           className="absolute top-2 right-2 gap-1.5 h-7 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
+                         >
+                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
+                           {isSpeaking ? "Stop" : "Écouter"}
+                         </Button>
                       </div>
                     )}
                   </motion.div>
