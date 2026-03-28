@@ -320,14 +320,14 @@ export default function Index() {
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button
               type="button"
-              variant={isListening ? "destructive" : "outline"}
-              size="icon"
+              variant={isListening ? "destructive" : "secondary"}
               onClick={handleVoiceInput}
               disabled={isLoading}
-              className={`h-11 w-11 shrink-0 ${isListening ? "animate-pulse" : ""}`}
+              className={`h-11 shrink-0 gap-2 px-3 ${isListening ? "animate-pulse" : ""}`}
               title={isListening ? "Arrêter l'écoute" : "Dicter votre question"}
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              <span className="hidden sm:inline text-sm font-medium">{isListening ? "Stop" : "Vocal"}</span>
             </Button>
             <Textarea
               value={input}
