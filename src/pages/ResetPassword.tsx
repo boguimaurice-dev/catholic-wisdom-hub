@@ -10,6 +10,7 @@ import { Cross, Loader2, Eye, EyeOff } from "lucide-react";
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
