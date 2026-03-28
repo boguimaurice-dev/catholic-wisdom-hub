@@ -5,66 +5,105 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SYSTEM_PROMPT = `Tu es un assistant catholique bienveillant et érudit. Tu aides les fidèles avec leurs questions sur la foi, la prière, les sacrements, la Bible, la vie chrétienne et la tradition de l'Église catholique.
+
+Tu réponds toujours en français, avec charité et respect. Tu cites les Écritures et le Catéchisme quand c'est pertinent. Tu ne te proclames jamais avec des titres ecclésiaux (évêque, prêtre, etc.) — tu es simplement un assistant.
+
+Sois concis mais complet. Utilise le markdown pour structurer tes réponses.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `Tu es un assistant catholique bienveillant et érudit. Tu aides les fidèles avec leurs questions sur la foi, la prière, les sacrements, la Bible, la vie chrétienne et la tradition de l'Église catholique.
-
-Tu réponds toujours en français, avec charité et respect. Tu cites les Écritures et le Catéchisme quand c'est pertinent. Tu ne te proclames jamais avec des titres ecclésiaux (évêque, prêtre, etc.) — tu es simplement un assistant.
-
-Sois concis mais complet. Utilise le markdown pour structurer tes réponses.`
-          },
-          ...messages,
-        ],
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages: messages.map((m: { role: string; content: string }) => ({
+          role: m.role,
+          content: m.content,
+        })),
         stream: true,
       }),
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error("Anthropic API error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requêtes atteinte, réessayez plus tard." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits insuffisants." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(response.body, {
+    // Transform Anthropic SSE stream to OpenAI-compatible SSE format
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    (async () => {
+      try {
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIdx;
+          while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+            const line = buffer.slice(0, newlineIdx).trim();
+            buffer = buffer.slice(newlineIdx + 1);
+
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6);
+            if (!jsonStr) continue;
+
+            try {
+              const event = JSON.parse(jsonStr);
+              if (event.type === "content_block_delta" && event.delta?.text) {
+                const openaiChunk = {
+                  choices: [{ delta: { content: event.delta.text } }],
+                };
+                await writer.write(encoder.encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+              } else if (event.type === "message_stop") {
+                await writer.write(encoder.encode("data: [DONE]\n\n"));
+              }
+            } catch { /* skip */ }
+          }
+        }
+        await writer.write(encoder.encode("data: [DONE]\n\n"));
+      } catch (e) {
+        console.error("Stream transform error:", e);
+      } finally {
+        await writer.close();
+      }
+    })();
+
+    return new Response(readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error("chatbot error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
