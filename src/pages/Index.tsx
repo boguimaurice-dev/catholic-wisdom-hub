@@ -350,6 +350,9 @@ export default function Index() {
           </div>
         </form>
       </div>
+
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   );
 }
