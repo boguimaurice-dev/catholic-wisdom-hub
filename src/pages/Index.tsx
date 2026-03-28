@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Chatbot } from "@/components/Chatbot";
 
 
 export default function Index() {
@@ -266,27 +267,29 @@ export default function Index() {
                           result={message.consultationResult}
                           question={messages[idx - 1]?.content || ""}
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
-                          title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
-                        >
-                          {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                           className="absolute top-3 right-3 gap-1.5 h-8 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
+                           title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
+                         >
+                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
+                           {isSpeaking ? "Stop" : "Écouter"}
+                         </Button>
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
                         <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-primary"
-                        >
-                          {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                           className="absolute top-2 right-2 gap-1.5 h-7 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
+                         >
+                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
+                           {isSpeaking ? "Stop" : "Écouter"}
+                         </Button>
                       </div>
                     )}
                   </motion.div>
@@ -319,14 +322,14 @@ export default function Index() {
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button
               type="button"
-              variant={isListening ? "destructive" : "outline"}
-              size="icon"
+              variant={isListening ? "destructive" : "secondary"}
               onClick={handleVoiceInput}
               disabled={isLoading}
-              className={`h-11 w-11 shrink-0 ${isListening ? "animate-pulse" : ""}`}
+              className={`h-11 shrink-0 gap-2 px-3 ${isListening ? "animate-pulse" : ""}`}
               title={isListening ? "Arrêter l'écoute" : "Dicter votre question"}
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              <span className="hidden sm:inline text-sm font-medium">{isListening ? "Stop" : "Vocal"}</span>
             </Button>
             <Textarea
               value={input}
@@ -347,6 +350,9 @@ export default function Index() {
           </div>
         </form>
       </div>
+
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   );
 }
