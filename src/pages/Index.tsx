@@ -267,15 +267,16 @@ export default function Index() {
                           result={message.consultationResult}
                           question={messages[idx - 1]?.content || ""}
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
-                          title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
-                        >
-                          {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                           className="absolute top-3 right-3 gap-1.5 h-8 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
+                           title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
+                         >
+                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
+                           {isSpeaking ? "Stop" : "Écouter"}
+                         </Button>
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
