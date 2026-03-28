@@ -16,6 +16,7 @@ import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Chatbot } from "@/components/Chatbot";
 
 
 export default function Index() {
