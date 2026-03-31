@@ -4,6 +4,8 @@ import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +27,7 @@ export default function Pricing() {
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const reference = searchParams.get("reference");
@@ -44,12 +47,12 @@ export default function Pricing() {
 
       if (error) throw error;
       if (data?.success) {
-        toast.success("Paiement confirmé ! Votre abonnement est actif.");
+        toast.success(t("plans.currentPlan"));
         await refresh();
         navigate("/pricing", { replace: true });
       }
     } catch (err) {
-      toast.error("Erreur lors de la vérification du paiement.");
+      toast.error(t("common.error"));
     }
   };
 
@@ -69,10 +72,10 @@ export default function Pricing() {
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        throw new Error(data?.error || "Erreur d'initialisation");
+        throw new Error(data?.error || t("common.error"));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erreur";
+      const message = err instanceof Error ? err.message : t("common.error");
       toast.error(message);
     } finally {
       setProcessingPlan(null);
@@ -97,15 +100,16 @@ export default function Pricing() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="font-serif text-lg sm:text-2xl font-bold">Abonnements</h1>
+            <h1 className="font-serif text-lg sm:text-2xl font-bold">{t("plans.choosePlan")}</h1>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/donation">
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Heart className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1">Soutenir</span>
+                <span className="hidden sm:inline ml-1">{t("header.support")}</span>
               </Button>
             </Link>
+            <LanguageSelector variant="ghost" />
             <ThemeToggle />
           </div>
         </div>
@@ -114,11 +118,11 @@ export default function Pricing() {
       <main className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
         <div className="text-center mb-10">
           <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-2">
-            Choisissez votre plan
+            {t("plans.choosePlan")}
           </h2>
           <div className="ornament" />
           <p className="text-muted-foreground max-w-md mx-auto">
-            Accédez à la sagesse de nos experts selon vos besoins
+            {t("plans.choosePlanDesc")}
           </p>
         </div>
 
@@ -137,7 +141,7 @@ export default function Pricing() {
               >
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-secondary-foreground px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Populaire
+                    {t("plans.popular")}
                   </div>
                 )}
 
@@ -148,14 +152,14 @@ export default function Pricing() {
                   <h3 className="font-serif text-xl font-bold text-foreground">{plan.name}</h3>
                   <div className="mt-2">
                     {plan.price_amount === 0 ? (
-                      <span className="text-3xl font-bold text-foreground">Gratuit</span>
+                      <span className="text-3xl font-bold text-foreground">{t("plans.free")}</span>
                     ) : (
                       <>
                         <span className="text-3xl font-bold text-foreground">
-                          {plan.price_amount.toLocaleString("fr-FR")}
+                          {plan.price_amount.toLocaleString(language === "fr" ? "fr-FR" : language === "pt" ? "pt-BR" : language)}
                         </span>
                         <span className="text-muted-foreground ml-1">
-                          {plan.currency}/mois
+                          {plan.currency}/{language === "en" ? "mo" : "mois"}
                         </span>
                       </>
                     )}
@@ -180,11 +184,11 @@ export default function Pricing() {
                   {processingPlan === plan.slug ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : isCurrentPlan ? (
-                    "Plan actuel"
+                    t("plans.currentPlan")
                   ) : plan.price_amount === 0 ? (
-                    "Plan actuel"
+                    t("plans.currentPlan")
                   ) : (
-                    "S'abonner"
+                    t("plans.subscribe")
                   )}
                 </Button>
               </motion.div>
@@ -195,9 +199,9 @@ export default function Pricing() {
         {subscription && (
           <div className="mt-8 text-center text-sm text-muted-foreground">
             <p>
-              Abonnement actif jusqu'au{" "}
+              {t("plans.activeUntil")}{" "}
               <span className="font-semibold text-foreground">
-                {new Date(subscription.current_period_end).toLocaleDateString("fr-FR")}
+                {new Date(subscription.current_period_end).toLocaleDateString(language === "fr" ? "fr-FR" : language === "pt" ? "pt-BR" : language === "es" ? "es-ES" : "en-US")}
               </span>
             </p>
           </div>
@@ -207,11 +211,11 @@ export default function Pricing() {
           <Link to="/donation">
             <Button variant="outline" size="lg" className="gap-2">
               <Heart className="w-5 h-5 text-destructive" />
-              Soutenir le Monastère Sainte Marie de Bouaké
+              {t("plans.supportMonastery")}
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground mt-2">
-            Participez librement aux œuvres de la communauté monastique
+            {t("plans.supportMonasteryDesc")}
           </p>
         </div>
       </main>

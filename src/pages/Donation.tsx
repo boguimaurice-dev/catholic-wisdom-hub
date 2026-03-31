@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,6 +32,7 @@ export default function Donation() {
   const [showThankYou, setShowThankYou] = useState(false);
   const [quote] = useState(getRandomQuote);
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
 
   const finalAmount = selectedAmount ?? (customAmount ? parseInt(customAmount) : 0);
 
@@ -41,7 +44,7 @@ export default function Donation() {
 
   const handleDonate = async () => {
     if (!finalAmount || finalAmount < 100) {
-      toast.error("Le montant minimum est de 100 XOF");
+      toast.error(t("donation.minAmount"));
       return;
     }
 
@@ -58,10 +61,10 @@ export default function Donation() {
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        throw new Error(data?.error || "Erreur d'initialisation");
+        throw new Error(data?.error || t("common.error"));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erreur";
+      const message = err instanceof Error ? err.message : t("common.error");
       toast.error(message);
     } finally {
       setProcessing(false);
@@ -78,9 +81,12 @@ export default function Donation() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="font-serif text-lg sm:text-2xl font-bold">Soutenir le Monastère</h1>
+            <h1 className="font-serif text-lg sm:text-2xl font-bold">{t("donation.title")}</h1>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageSelector variant="ghost" />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -109,7 +115,7 @@ export default function Donation() {
                 transition={{ delay: 0.4 }}
                 className="font-serif text-2xl sm:text-3xl text-primary mb-3"
               >
-                Merci pour votre générosité !
+                {t("donation.thankYou")}
               </motion.h2>
 
               <motion.p
@@ -118,8 +124,7 @@ export default function Donation() {
                 transition={{ delay: 0.5 }}
                 className="text-muted-foreground mb-8 max-w-md mx-auto"
               >
-                Votre don soutient les œuvres et la vie du Monastère Sainte Marie de Bouaké.
-                Que le Seigneur vous bénisse pour votre générosité.
+                {t("donation.thankYouDesc")}
               </motion.p>
 
               <motion.div
@@ -145,7 +150,7 @@ export default function Donation() {
               >
                 <Link to="/">
                   <Button variant="default" className="bg-primary text-primary-foreground">
-                    Retour à l'assistant
+                    {t("donation.backToAssistant")}
                   </Button>
                 </Link>
                 <Button
@@ -153,7 +158,7 @@ export default function Donation() {
                   onClick={() => setShowThankYou(false)}
                 >
                   <Heart className="w-4 h-4 mr-2" />
-                  Faire un autre don
+                  {t("donation.anotherDonation")}
                 </Button>
               </motion.div>
             </motion.div>
@@ -168,12 +173,11 @@ export default function Donation() {
                   <Church className="w-10 h-10 text-primary" />
                 </div>
                 <h2 className="font-serif text-2xl sm:text-3xl text-primary mb-3">
-                  Libre don pour le Monastère
+                  {t("donation.heading")}
                 </h2>
                 <div className="ornament" />
                 <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Participez librement aux œuvres et à la vie du Monastère Sainte Marie de Bouaké.
-                  Votre générosité soutient la communauté monastique et ses missions.
+                  {t("donation.description")}
                 </p>
               </motion.div>
 
@@ -184,7 +188,7 @@ export default function Donation() {
                 className="bg-card border border-border rounded-2xl p-6 sm:p-8"
               >
                 <h3 className="font-serif text-lg font-semibold text-foreground mb-4 text-center">
-                  Choisissez un montant ou entrez le vôtre
+                  {t("donation.chooseAmount")}
                 </h3>
 
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
@@ -209,12 +213,12 @@ export default function Donation() {
 
                 <div className="mb-6">
                   <label className="text-sm text-muted-foreground mb-2 block">
-                    Ou entrez un montant libre (XOF)
+                    {t("donation.customAmount")}
                   </label>
                   <Input
                     type="number"
                     min="100"
-                    placeholder="Montant en XOF"
+                    placeholder={t("donation.amountPlaceholder")}
                     value={customAmount}
                     onChange={(e) => {
                       setCustomAmount(e.target.value);
@@ -230,7 +234,7 @@ export default function Donation() {
                     animate={{ opacity: 1 }}
                     className="text-center mb-4 p-3 bg-primary/5 rounded-lg"
                   >
-                    <span className="text-muted-foreground">Votre don : </span>
+                    <span className="text-muted-foreground">{t("donation.yourDonation")} </span>
                     <span className="text-2xl font-bold text-primary">
                       {finalAmount.toLocaleString("fr-FR")} XOF
                     </span>
@@ -247,7 +251,7 @@ export default function Donation() {
                   ) : (
                     <>
                       <Heart className="w-5 h-5 mr-2" />
-                      Faire un don
+                      {t("donation.donate")}
                     </>
                   )}
                 </Button>
@@ -259,7 +263,7 @@ export default function Donation() {
                 transition={{ delay: 0.3 }}
                 className="text-center text-xs text-muted-foreground mt-6"
               >
-                Paiement sécurisé via Paystack. L'application reste entièrement gratuite.
+                {t("donation.securePayment")}
               </motion.p>
             </motion.div>
           )}

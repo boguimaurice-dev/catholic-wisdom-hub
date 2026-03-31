@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { ConsultationResult } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,10 @@ import { ArrowLeft, Loader2, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS, es, pt } from "date-fns/locale";
+import { LanguageSelector } from "@/components/LanguageSelector";
+
+const dateLocales = { fr, en: enUS, es, pt };
 
 interface SavedConsultation {
   id: string;
@@ -23,6 +27,7 @@ interface SavedConsultation {
 
 export default function History() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [consultations, setConsultations] = useState<SavedConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -38,7 +43,7 @@ export default function History() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error("Erreur lors du chargement de l'historique");
+      toast.error(t("history.loadError"));
     } else {
       setConsultations((data || []).map((d: any) => ({
         ...d,
@@ -52,10 +57,10 @@ export default function History() {
   const deleteConsultation = async (id: string) => {
     const { error } = await supabase.from("consultations").delete().eq("id", id);
     if (error) {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t("history.deleteError"));
     } else {
       setConsultations((prev) => prev.filter((c) => c.id !== id));
-      toast.success("Consultation supprimée");
+      toast.success(t("history.deleted"));
     }
   };
 
@@ -72,14 +77,17 @@ export default function History() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground py-4 px-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Retour
-            </Button>
-          </Link>
-          <h1 className="font-serif text-xl font-bold">Historique des consultations</h1>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                {t("common.back")}
+              </Button>
+            </Link>
+            <h1 className="font-serif text-xl font-bold">{t("history.title")}</h1>
+          </div>
+          <LanguageSelector variant="ghost" />
         </div>
       </header>
 
@@ -91,9 +99,9 @@ export default function History() {
         ) : consultations.length === 0 ? (
           <div className="text-center py-20">
             <Clock className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">Aucune consultation sauvegardée.</p>
+            <p className="text-muted-foreground">{t("history.empty")}</p>
             <Link to="/">
-              <Button className="mt-4">Poser une question</Button>
+              <Button className="mt-4">{t("history.askQuestion")}</Button>
             </Link>
           </div>
         ) : (
@@ -112,7 +120,7 @@ export default function History() {
                         onClick={() => setExpandedId(null)}
                         className="text-sm text-accent hover:underline"
                       >
-                        ← Réduire
+                        ← {t("history.collapse")}
                       </button>
                       <ConsultationDocument
                         result={toConsultationResult(c)}
@@ -128,9 +136,9 @@ export default function History() {
                         >
                           <p className="font-medium text-foreground line-clamp-2">{c.question}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(c.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                            {format(new Date(c.created_at), "d MMMM yyyy 'à' HH:mm", { locale: dateLocales[language] })}
                             {" · "}
-                            {c.selected_experts.length} expert(s)
+                            {c.selected_experts.length} {t("history.experts")}
                           </p>
                         </button>
                         <Button
