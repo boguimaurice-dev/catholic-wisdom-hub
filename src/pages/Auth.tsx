@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Cross, Loader2, Mail, Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,6 +18,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +39,10 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("Vérifiez votre email pour confirmer votre inscription.");
+        toast.success(t("auth.checkEmail"));
       }
     } catch (error: any) {
-      toast.error(error.message || "Erreur d'authentification");
+      toast.error(error.message || t("auth.authError"));
     } finally {
       setLoading(false);
     }
@@ -50,7 +53,7 @@ export default function Auth() {
       redirect_uri: window.location.origin,
     });
     if (error) {
-      toast.error("Erreur de connexion Google");
+      toast.error(t("auth.googleError"));
     }
   };
 
@@ -59,14 +62,17 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <LanguageSelector />
+          </div>
           <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
             <Cross className="w-7 h-7 text-primary" />
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl text-primary font-bold">
-            Assistant Catholique
+            {t("header.title")}
           </h1>
           <p className="text-muted-foreground text-sm mt-2">
-            {isLogin ? "Connectez-vous pour accéder à vos consultations" : "Créez votre compte"}
+            {isLogin ? t("auth.loginTitle") : t("auth.signupTitle")}
           </p>
         </div>
 
@@ -85,7 +91,7 @@ export default function Auth() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continuer avec Google
+            {t("auth.continueWithGoogle")}
           </Button>
 
           <div className="relative my-5">
@@ -93,7 +99,7 @@ export default function Auth() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-3 text-muted-foreground">ou</span>
+              <span className="bg-card px-3 text-muted-foreground">{t("common.or")}</span>
             </div>
           </div>
 
@@ -101,18 +107,18 @@ export default function Auth() {
           <form onSubmit={handleEmailAuth} className="space-y-4">
             {!isLogin && (
               <div>
-                <Label htmlFor="name">Nom d'affichage</Label>
+                <Label htmlFor="name">{t("auth.displayName")}</Label>
                 <Input
                   id="name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Votre nom"
+                  placeholder={t("auth.yourName")}
                   required={!isLogin}
                 />
               </div>
             )}
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -123,7 +129,7 @@ export default function Auth() {
               />
             </div>
             <div>
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -148,7 +154,7 @@ export default function Auth() {
             {isLogin && (
               <div className="text-right">
                 <Link to="/forgot-password" className="text-xs text-accent hover:underline">
-                  Mot de passe oublié ?
+                  {t("auth.forgotPassword")}
                 </Link>
               </div>
             )}
@@ -159,17 +165,17 @@ export default function Auth() {
               ) : (
                 <Mail className="w-4 h-4 mr-2" />
               )}
-              {isLogin ? "Se connecter" : "S'inscrire"}
+              {isLogin ? t("auth.login") : t("auth.signup")}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-5">
-            {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
+            {isLogin ? t("auth.noAccount") : t("auth.hasAccount")}{" "}
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-primary hover:underline font-medium"
             >
-              {isLogin ? "S'inscrire" : "Se connecter"}
+              {isLogin ? t("auth.signup") : t("auth.login")}
             </button>
           </p>
         </div>

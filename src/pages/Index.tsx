@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
 import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +23,7 @@ import { Chatbot } from "@/components/Chatbot";
 
 export default function Index() {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +61,7 @@ export default function Index() {
     if (!input.trim() || isLoading) return;
 
     if (!canConsult()) {
-      toast.error(`Vous avez atteint la limite de ${currentPlan?.max_consultations_per_day || 3} consultations/jour. Passez à un plan supérieur !`);
+      toast.error(t("index.limitReached").replace("{limit}", String(currentPlan?.max_consultations_per_day || 3)));
       return;
     }
 
@@ -70,22 +73,22 @@ export default function Index() {
     setConsultedExperts([]);
 
     try {
-      setCurrentPhase("Analyse de la question par Monseigneur l'Orchestrateur…");
-      setTimeout(() => setCurrentPhase("Sélection des experts pertinents…"), 1000);
+      setCurrentPhase(t("index.analyzePhase"));
+      setTimeout(() => setCurrentPhase(t("index.selectPhase")), 1000);
 
       const result = await consultOrchestrator(question, messages);
 
       if (result.success) {
         const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
         setActiveExperts(expertKeys);
-        setCurrentPhase(`Consultation de ${expertKeys.length} expert(s)…`);
+        setCurrentPhase(t("index.consultPhase").replace("{count}", String(expertKeys.length)));
 
         for (const key of expertKeys) {
           await new Promise((r) => setTimeout(r, 500));
           setConsultedExperts((prev) => [...prev, key]);
         }
 
-        setCurrentPhase("Synthèse en cours…");
+        setCurrentPhase(t("index.synthesisPhase"));
         await new Promise((r) => setTimeout(r, 800));
 
         setMessages((prev) => [
@@ -101,10 +104,10 @@ export default function Index() {
         await saveConsultation(question, result);
         await incrementUsage();
       } else {
-        throw new Error(result.error || "Erreur lors de la consultation");
+        throw new Error(result.error || t("common.error"));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Une erreur est survenue";
+      const message = error instanceof Error ? error.message : t("common.error");
 
       toast.error(message);
       setMessages((prev) => [
@@ -160,10 +163,10 @@ export default function Index() {
               </div>
               <div>
                 <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
-                  Assistant Catholique
+                  {t("header.title")}
                 </h1>
                 <p className="text-xs opacity-80 hidden sm:block font-light">
-                  8 experts à votre service
+                  {t("header.subtitle")}
                 </p>
               </div>
             </div>
@@ -181,19 +184,19 @@ export default function Index() {
               <Link to="/pricing">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <CreditCard className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Plans</span>
+                  <span className="hidden sm:inline ml-1">{t("header.plans")}</span>
                 </Button>
               </Link>
               <Link to="/donation">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Heart className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Soutenir</span>
+                  <span className="hidden sm:inline ml-1">{t("header.support")}</span>
                 </Button>
               </Link>
               <Link to="/history">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <History className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Historique</span>
+                  <span className="hidden sm:inline ml-1">{t("header.history")}</span>
                 </Button>
               </Link>
               {messages.length > 0 && (
@@ -201,6 +204,7 @@ export default function Index() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
+              <LanguageSelector variant="ghost" />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
@@ -236,11 +240,11 @@ export default function Index() {
                   <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-primary/60" />
                 </motion.div>
                 <h2 className="font-serif text-2xl sm:text-4xl text-primary mb-2 tracking-wide">
-                  Bienvenue, cher ami
+                  {t("index.welcome")}
                 </h2>
                 <div className="ornament" />
                 <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4 leading-relaxed">
-                  Explorez la richesse de la foi catholique avec nos <span className="text-secondary font-semibold">8 experts</span> à votre service.
+                  {t("index.welcomeDesc")} <span className="text-secondary font-semibold">{t("index.experts")}</span> {t("index.welcomeDesc2")}
                 </p>
               </motion.div>
 
@@ -272,10 +276,10 @@ export default function Index() {
                            size="sm"
                            onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
                            className="absolute top-3 right-3 gap-1.5 h-8 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
-                           title={isSpeaking ? "Arrêter la lecture" : "Écouter la réponse"}
+                           title={isSpeaking ? t("index.stop") : t("index.listen")}
                          >
                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? "Stop" : "Écouter"}
+                           {isSpeaking ? t("index.stop") : t("index.listen")}
                          </Button>
                       </div>
                     ) : (
@@ -288,7 +292,7 @@ export default function Index() {
                            className="absolute top-2 right-2 gap-1.5 h-7 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
                          >
                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? "Stop" : "Écouter"}
+                           {isSpeaking ? t("index.stop") : t("index.listen")}
                          </Button>
                       </div>
                     )}
@@ -326,15 +330,15 @@ export default function Index() {
               onClick={handleVoiceInput}
               disabled={isLoading}
               className={`h-11 shrink-0 gap-2 px-3 ${isListening ? "animate-pulse" : ""}`}
-              title={isListening ? "Arrêter l'écoute" : "Dicter votre question"}
+              title={isListening ? t("index.stop") : t("index.vocal")}
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              <span className="hidden sm:inline text-sm font-medium">{isListening ? "Stop" : "Vocal"}</span>
+              <span className="hidden sm:inline text-sm font-medium">{isListening ? t("index.stop") : t("index.vocal")}</span>
             </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "🎙️ Parlez maintenant…" : "Posez votre question sur la foi catholique…"}
+              placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
               className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
