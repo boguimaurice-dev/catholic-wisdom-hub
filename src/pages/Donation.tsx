@@ -37,10 +37,30 @@ export default function Donation() {
   const finalAmount = selectedAmount ?? (customAmount ? parseInt(customAmount) : 0);
 
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
-      setShowThankYou(true);
+    const reference = searchParams.get("reference") || searchParams.get("trxref");
+    if (reference) {
+      verifyDonation(reference);
     }
   }, [searchParams]);
+
+  const verifyDonation = async (reference: string) => {
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+        body: { reference },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setShowThankYou(true);
+      } else {
+        toast.error(t("common.error"));
+      }
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const handleDonate = async () => {
     if (!finalAmount || finalAmount < 100) {
@@ -53,7 +73,7 @@ export default function Donation() {
       const { data, error } = await supabase.functions.invoke("paystack-donate", {
         body: {
           amount: finalAmount,
-          callbackUrl: `${window.location.origin}/donation?success=true`,
+          callbackUrl: `${window.location.origin}/donation`,
         },
       });
 
