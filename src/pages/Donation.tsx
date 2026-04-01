@@ -70,7 +70,7 @@ export default function Donation() {
   };
 
   const handleDonate = async () => {
-    if (!finalAmount || finalAmount < 100) {
+    if (!finalAmount || finalAmount < config.min) {
       toast.error(t("donation.minAmount"));
       return;
     }
