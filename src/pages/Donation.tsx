@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles } from "lucide-react";
+import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useSearchParams } from "react-router-dom";
@@ -10,7 +10,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const suggestedAmounts = [500, 1000, 2000, 5000, 10000];
+type Currency = "XOF" | "USD";
+
+const currencyConfig: Record<Currency, { symbol: string; flag: string; suggestedAmounts: number[]; min: number }> = {
+  XOF: { symbol: "XOF", flag: "🇨🇮", suggestedAmounts: [500, 1000, 2000, 5000, 10000], min: 100 },
+  USD: { symbol: "$", flag: "🇺🇸", suggestedAmounts: [5, 10, 20, 50, 100], min: 1 },
+};
 
 const biblicalQuotes = [
   { text: "Chacun donne comme il l'a résolu en son cœur, sans tristesse ni contrainte ; car Dieu aime celui qui donne avec joie.", ref: "2 Corinthiens 9, 7" },
@@ -26,6 +31,7 @@ function getRandomQuote() {
 }
 
 export default function Donation() {
+  const [currency, setCurrency] = useState<Currency>("XOF");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -34,6 +40,7 @@ export default function Donation() {
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
+  const config = currencyConfig[currency];
   const finalAmount = selectedAmount ?? (customAmount ? parseInt(customAmount) : 0);
 
   useEffect(() => {
@@ -63,7 +70,7 @@ export default function Donation() {
   };
 
   const handleDonate = async () => {
-    if (!finalAmount || finalAmount < 100) {
+    if (!finalAmount || finalAmount < config.min) {
       toast.error(t("donation.minAmount"));
       return;
     }
@@ -73,6 +80,7 @@ export default function Donation() {
       const { data, error } = await supabase.functions.invoke("paystack-donate", {
         body: {
           amount: finalAmount,
+          currency,
           callbackUrl: `${window.location.origin}/donation`,
         },
       });
@@ -211,8 +219,27 @@ export default function Donation() {
                   {t("donation.chooseAmount")}
                 </h3>
 
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <span className="text-sm text-muted-foreground">{t("donation.currencyLabel")} :</span>
+                  {(Object.keys(currencyConfig) as Currency[]).map((c) => (
+                    <Button
+                      key={c}
+                      size="sm"
+                      variant={currency === c ? "default" : "outline"}
+                      onClick={() => {
+                        setCurrency(c);
+                        setSelectedAmount(null);
+                        setCustomAmount("");
+                      }}
+                      className={currency === c ? "bg-primary text-primary-foreground" : ""}
+                    >
+                      {currencyConfig[c].flag} {c}
+                    </Button>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
-                  {suggestedAmounts.map((amount) => (
+                  {config.suggestedAmounts.map((amount) => (
                     <Button
                       key={amount}
                       variant={selectedAmount === amount ? "default" : "outline"}
@@ -226,7 +253,7 @@ export default function Donation() {
                           : ""
                       }`}
                     >
-                      {amount.toLocaleString("fr-FR")}
+                      {currency === "USD" ? `$${amount}` : amount.toLocaleString("fr-FR")}
                     </Button>
                   ))}
                 </div>
@@ -237,7 +264,7 @@ export default function Donation() {
                   </label>
                   <Input
                     type="number"
-                    min="100"
+                    min={String(config.min)}
                     placeholder={t("donation.amountPlaceholder")}
                     value={customAmount}
                     onChange={(e) => {
@@ -256,14 +283,14 @@ export default function Donation() {
                   >
                     <span className="text-muted-foreground">{t("donation.yourDonation")} </span>
                     <span className="text-2xl font-bold text-primary">
-                      {finalAmount.toLocaleString("fr-FR")} XOF
+                      {currency === "USD" ? `$${finalAmount.toLocaleString("en-US")}` : `${finalAmount.toLocaleString("fr-FR")} XOF`}
                     </span>
                   </motion.div>
                 )}
 
                 <Button
                   onClick={handleDonate}
-                  disabled={!finalAmount || finalAmount < 100 || processing}
+                  disabled={!finalAmount || finalAmount < config.min || processing}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-6"
                 >
                   {processing ? (

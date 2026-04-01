@@ -28,8 +28,10 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Not authenticated");
 
-    const { amount, callbackUrl } = await req.json();
-    if (!amount || amount < 100) throw new Error("Montant minimum: 100 XOF");
+    const { amount, callbackUrl, currency } = await req.json();
+    const selectedCurrency = ["XOF", "USD", "GHS", "NGN", "ZAR", "KES"].includes(currency) ? currency : "XOF";
+    const minAmount = selectedCurrency === "USD" ? 1 : 100;
+    if (!amount || amount < minAmount) throw new Error(`Montant minimum: ${minAmount} ${selectedCurrency}`);
     if (!callbackUrl) throw new Error("Missing callbackUrl");
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -41,7 +43,7 @@ serve(async (req) => {
       body: JSON.stringify({
         email: user.email,
         amount: amount * 100,
-        currency: "XOF",
+        currency: selectedCurrency,
         callback_url: callbackUrl,
         metadata: {
           user_id: user.id,
