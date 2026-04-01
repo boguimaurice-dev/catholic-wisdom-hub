@@ -290,7 +290,7 @@ export default function Donation() {
 
                 <Button
                   onClick={handleDonate}
-                  disabled={!finalAmount || finalAmount < 100 || processing}
+                  disabled={!finalAmount || finalAmount < config.min || processing}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-6"
                 >
                   {processing ? (
