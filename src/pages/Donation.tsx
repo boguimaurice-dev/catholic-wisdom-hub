@@ -10,7 +10,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const suggestedAmounts = [500, 1000, 2000, 5000, 10000];
+type Currency = "XOF" | "USD";
+
+const currencyConfig: Record<Currency, { symbol: string; flag: string; suggestedAmounts: number[]; min: number }> = {
+  XOF: { symbol: "XOF", flag: "🇨🇮", suggestedAmounts: [500, 1000, 2000, 5000, 10000], min: 100 },
+  USD: { symbol: "$", flag: "🇺🇸", suggestedAmounts: [5, 10, 20, 50, 100], min: 1 },
+};
 
 const biblicalQuotes = [
   { text: "Chacun donne comme il l'a résolu en son cœur, sans tristesse ni contrainte ; car Dieu aime celui qui donne avec joie.", ref: "2 Corinthiens 9, 7" },
