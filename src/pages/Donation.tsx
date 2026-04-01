@@ -80,6 +80,7 @@ export default function Donation() {
       const { data, error } = await supabase.functions.invoke("paystack-donate", {
         body: {
           amount: finalAmount,
+          currency,
           callbackUrl: `${window.location.origin}/donation`,
         },
       });
