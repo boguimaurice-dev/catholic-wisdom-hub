@@ -219,8 +219,27 @@ export default function Donation() {
                   {t("donation.chooseAmount")}
                 </h3>
 
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <span className="text-sm text-muted-foreground">{t("donation.currencyLabel")} :</span>
+                  {(Object.keys(currencyConfig) as Currency[]).map((c) => (
+                    <Button
+                      key={c}
+                      size="sm"
+                      variant={currency === c ? "default" : "outline"}
+                      onClick={() => {
+                        setCurrency(c);
+                        setSelectedAmount(null);
+                        setCustomAmount("");
+                      }}
+                      className={currency === c ? "bg-primary text-primary-foreground" : ""}
+                    >
+                      {currencyConfig[c].flag} {c}
+                    </Button>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
-                  {suggestedAmounts.map((amount) => (
+                  {config.suggestedAmounts.map((amount) => (
                     <Button
                       key={amount}
                       variant={selectedAmount === amount ? "default" : "outline"}
@@ -234,7 +253,7 @@ export default function Donation() {
                           : ""
                       }`}
                     >
-                      {amount.toLocaleString("fr-FR")}
+                      {currency === "USD" ? `$${amount}` : amount.toLocaleString("fr-FR")}
                     </Button>
                   ))}
                 </div>
