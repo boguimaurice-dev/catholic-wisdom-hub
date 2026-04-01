@@ -283,7 +283,7 @@ export default function Donation() {
                   >
                     <span className="text-muted-foreground">{t("donation.yourDonation")} </span>
                     <span className="text-2xl font-bold text-primary">
-                      {finalAmount.toLocaleString("fr-FR")} XOF
+                      {currency === "USD" ? `$${finalAmount.toLocaleString("en-US")}` : `${finalAmount.toLocaleString("fr-FR")} XOF`}
                     </span>
                   </motion.div>
                 )}
