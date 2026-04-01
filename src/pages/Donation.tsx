@@ -264,7 +264,7 @@ export default function Donation() {
                   </label>
                   <Input
                     type="number"
-                    min="100"
+                    min={String(config.min)}
                     placeholder={t("donation.amountPlaceholder")}
                     value={customAmount}
                     onChange={(e) => {
