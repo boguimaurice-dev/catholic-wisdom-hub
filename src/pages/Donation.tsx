@@ -31,6 +31,7 @@ function getRandomQuote() {
 }
 
 export default function Donation() {
+  const [currency, setCurrency] = useState<Currency>("XOF");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -39,6 +40,7 @@ export default function Donation() {
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
+  const config = currencyConfig[currency];
   const finalAmount = selectedAmount ?? (customAmount ? parseInt(customAmount) : 0);
 
   useEffect(() => {
