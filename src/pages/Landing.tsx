@@ -7,8 +7,9 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Cross, BookOpen, Users, Shield, Mic, MessageCircle,
-  Star, ChevronRight, Heart, Sparkles, Globe
+  Star, ChevronRight, Heart, Globe
 } from "lucide-react";
+import { LandingPricing } from "@/components/LandingPricing";
 
 const featureKeys = [
   { icon: Users, key: "experts" },
@@ -208,30 +209,7 @@ export default function Landing() {
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
               {t("landing.pricingDesc")}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              {[
-                { name: t("plans.basic"), price: t("plans.free"), desc: `3 ${t("plans.perDay")}` },
-                { name: t("plans.premium"), price: "2 500 XOF", desc: `15 ${t("plans.perDay")}`, highlight: true },
-                { name: t("plans.elite"), price: "5 000 XOF", desc: t("plans.unlimited") },
-              ].map((plan) => (
-                <Card
-                  key={plan.name}
-                  className={`border-border/50 ${plan.highlight ? "ring-2 ring-secondary shadow-lg" : ""}`}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="font-semibold text-sm text-muted-foreground mb-1">{plan.name}</div>
-                    <div className="text-2xl font-serif font-bold mb-1">{plan.price}</div>
-                    <div className="text-xs text-muted-foreground">{plan.desc}</div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <Link to="/auth" className="inline-block mt-8">
-              <Button size="lg" className="gap-2">
-                <Heart className="h-4 w-4" />
-                {t("landing.createFreeAccount")}
-              </Button>
-            </Link>
+            <LandingPricing />
           </motion.div>
         </div>
       </section>
