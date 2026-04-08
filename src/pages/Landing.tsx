@@ -7,8 +7,9 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Cross, BookOpen, Users, Shield, Mic, MessageCircle,
-  Star, ChevronRight, Heart, Sparkles, Globe
+  Star, ChevronRight, Heart, Globe
 } from "lucide-react";
+import { LandingPricing } from "@/components/LandingPricing";
 
 const featureKeys = [
   { icon: Users, key: "experts" },
