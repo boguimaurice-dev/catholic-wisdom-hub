@@ -58,10 +58,6 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 bg-secondary/15 border border-secondary/30 rounded-full px-4 py-1.5 mb-8">
-              <Sparkles className="h-4 w-4 text-secondary" />
-              <span className="text-sm font-medium text-secondary">{t("landing.poweredByAI")}</span>
-            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
               {t("landing.heroTitle1")}{" "}
               <span className="text-accent">{t("landing.heroTitle2")}</span>{" "}
