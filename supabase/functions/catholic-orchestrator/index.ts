@@ -166,16 +166,31 @@ async function callAI(messages: Message[], model = "claude-sonnet-4-20250514"): 
       console.warn("Anthropic rate limit:", error);
       throw new HttpError(429, "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
     }
-    if (response.status === 402 || response.status === 400) {
-      console.warn("Anthropic error:", error);
-      throw new HttpError(response.status, `Erreur Anthropic: ${response.status}`);
+    if (response.status === 402) {
+      console.warn("Anthropic payment error:", error);
+      throw new HttpError(402, "Crédits épuisés. Veuillez recharger votre compte.");
+    }
+    if (response.status === 400) {
+      console.warn("Anthropic 400 error:", error);
+      // Content filtering or invalid request - return graceful fallback
+      if (error.includes("content filtering") || error.includes("blocked")) {
+        return "Je ne suis pas en mesure de répondre à cette question spécifique en raison des politiques de filtrage de contenu. Veuillez reformuler votre question ou poser une question différente.";
+      }
+      throw new HttpError(400, "La requête n'a pas pu être traitée. Veuillez reformuler votre question.");
     }
     console.error("Anthropic error:", response.status, error);
     throw new HttpError(response.status, `Erreur IA: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.content?.[0]?.text || "";
+  const text = data.content?.[0]?.text || "";
+  
+  // Handle stop_reason = "end_turn" with empty content (another form of content filtering)
+  if (!text && data.stop_reason === "end_turn") {
+    return "Je ne suis pas en mesure de fournir une réponse complète à cette question. Veuillez la reformuler ou essayer une question différente.";
+  }
+  
+  return text;
 }
 
 serve(async (req) => {
@@ -297,12 +312,14 @@ Format ta réponse en markdown avec une belle mise en page.`;
     });
 
   } catch (error) {
-    if (error instanceof HttpError && (error.status === 402 || error.status === 429)) {
-      console.warn("Orchestrator handled limit:", error.message);
+    if (error instanceof HttpError && [400, 402, 429].includes(error.status)) {
+      console.warn("Orchestrator handled error:", error.status, error.message);
+      const errorType = error.status === 402 ? "payment_required" : error.status === 429 ? "rate_limit" : "content_filtered";
       return jsonResponse({
         error: error.message,
-        errorType: error.status === 402 ? "payment_required" : "rate_limit",
-        success: false
+        errorType,
+        success: false,
+        synthesis: error.status === 400 ? error.message : undefined
       });
     }
 
