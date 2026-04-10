@@ -312,12 +312,14 @@ Format ta réponse en markdown avec une belle mise en page.`;
     });
 
   } catch (error) {
-    if (error instanceof HttpError && (error.status === 402 || error.status === 429)) {
-      console.warn("Orchestrator handled limit:", error.message);
+    if (error instanceof HttpError && [400, 402, 429].includes(error.status)) {
+      console.warn("Orchestrator handled error:", error.status, error.message);
+      const errorType = error.status === 402 ? "payment_required" : error.status === 429 ? "rate_limit" : "content_filtered";
       return jsonResponse({
         error: error.message,
-        errorType: error.status === 402 ? "payment_required" : "rate_limit",
-        success: false
+        errorType,
+        success: false,
+        synthesis: error.status === 400 ? error.message : undefined
       });
     }
 
