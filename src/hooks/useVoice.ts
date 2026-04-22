@@ -57,10 +57,22 @@ export function useTTS() {
       return;
     }
 
+    // Nettoyer le texte des symboles markdown
+    const cleanText = text
+      .replace(/#{1,6}\s*/g, "") // Supprime les # des titres
+      .replace(/\*\*?/g, "") // Supprime les * du gras et italique
+      .replace(/_{1,2}/g, "") // Supprime les underscores
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Convertit [texte](lien) en texte
+      .replace(/`{1,3}[^`]*`{1,3}/g, "") // Supprime le code inline
+      .replace(/>\s*/g, "") // Supprime les citations
+      .replace(/-\s*/g, "") // Supprime les tirets de liste
+      .replace(/\n+/g, " ") // Remplace les sauts de ligne par espaces
+      .trim();
+
     // Stop any current speech
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "fr-FR";
     utterance.rate = 0.95;
     utterance.pitch = 1;
