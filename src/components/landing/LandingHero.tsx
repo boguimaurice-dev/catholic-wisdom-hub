@@ -15,50 +15,49 @@ export function LandingHero() {
       <div className="absolute top-40 right-0 w-64 h-64 rounded-full bg-accent/5 blur-3xl" />
 
       <div className="max-w-5xl mx-auto text-center relative z-10">
+        {/* Ornamental cross */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-8 flex justify-center"
         >
-          {/* Ornamental cross */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8 flex justify-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center shadow-lg shadow-accent/10">
-              <span className="text-3xl text-accent">✦</span>
-            </div>
-          </motion.div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-bold leading-[1.1] mb-6 tracking-tight">
-            {t("landing.heroTitle1")}{" "}
-            <span className="text-accent relative">
-              {t("landing.heroTitle2")}
-              <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary/40" viewBox="0 0 200 12" fill="none">
-                <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-              </svg>
-            </span>{" "}
-            {t("landing.heroTitle3")}
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
-            {t("landing.heroDesc")}
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link to="/auth">
-              <Button size="lg" className="text-base px-10 py-7 gap-2 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5 rounded-xl">
-                {t("landing.startFree")}
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </Link>
-            <a href="#features">
-              <Button variant="outline" size="lg" className="text-base px-10 py-7 rounded-xl border-border/60">
-                {t("landing.discoverFeatures")}
-              </Button>
-            </a>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center shadow-lg shadow-accent/10">
+            <span className="text-3xl text-accent">✦</span>
           </div>
+        </motion.div>
+
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-bold leading-[1.1] mb-6 tracking-tight">
+          {t("landing.heroTitle1")}{" "}
+          <span className="text-accent relative">
+            {t("landing.heroTitle2")}
+            <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary/40" viewBox="0 0 200 12" fill="none">
+              <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+            </svg>
+          </span>{" "}
+          {t("landing.heroTitle3")}
+        </h1>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
+          {t("landing.heroDesc")}
+        </p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+        >
+          <Link to="/auth">
+            <Button size="lg" className="text-base px-10 py-7 gap-2 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5 rounded-xl">
+              {t("landing.startFree")}
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </Link>
+          <a href="#features">
+            <Button variant="outline" size="lg" className="text-base px-10 py-7 rounded-xl border-border/60">
+              {t("landing.discoverFeatures")}
+            </Button>
+          </a>
         </motion.div>
 
         {/* Stats with cards */}
