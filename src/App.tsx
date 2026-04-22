@@ -47,6 +47,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
