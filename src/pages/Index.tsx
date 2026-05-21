@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines } from "lucide-react";
+import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link } from "react-router-dom";
@@ -181,6 +181,12 @@ export default function Index() {
                   </span>
                 </div>
               )}
+              <Link to="/liturgy">
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                  <BookMarked className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Liturgie du jour</span>
+                </Button>
+              </Link>
               <Link to="/pricing">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <CreditCard className="w-4 h-4" />

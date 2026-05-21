@@ -15,6 +15,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const History = lazy(() => import("./pages/History"));
 const Donation = lazy(() => import("./pages/Donation"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Liturgy = lazy(() => import("./pages/Liturgy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/donation" element={<ProtectedRoute><Donation /></ProtectedRoute>} />
             <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+            <Route path="/liturgy" element={<ProtectedRoute><Liturgy /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
