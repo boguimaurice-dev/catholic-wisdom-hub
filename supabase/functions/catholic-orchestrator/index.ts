@@ -133,7 +133,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
-async function callAI(messages: Message[], model = "claude-sonnet-4-20250514"): Promise<string> {
+async function callAnthropic(messages: Message[], model: string): Promise<string> {
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) throw new HttpError(500, "ANTHROPIC_API_KEY not configured");
 
@@ -184,13 +184,29 @@ async function callAI(messages: Message[], model = "claude-sonnet-4-20250514"): 
 
   const data = await response.json();
   const text = data.content?.[0]?.text || "";
-  
+
   // Handle stop_reason = "end_turn" with empty content (another form of content filtering)
   if (!text && data.stop_reason === "end_turn") {
     return "Je ne suis pas en mesure de fournir une réponse complète à cette question. Veuillez la reformuler ou essayer une question différente.";
   }
-  
+
   return text;
+}
+
+async function callAI(
+  messages: Message[],
+  model = "claude-sonnet-4-20250514",
+  fallbackModel = "claude-3-7-sonnet-20250219"
+): Promise<string> {
+  try {
+    return await callAnthropic(messages, model);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) {
+      console.warn(`Model ${model} not available, falling back to ${fallbackModel}`);
+      return await callAnthropic(messages, fallbackModel);
+    }
+    throw e;
+  }
 }
 
 serve(async (req) => {
@@ -206,7 +222,7 @@ serve(async (req) => {
     }
 
     // Phase 1: Analyse par l'Orchestrateur
-    const analysePrompt = `Tu es Monseigneur l'Orchestrateur, un prélat érudit coordonnant une équipe d'experts catholiques.
+    const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
 
 EXPERTS DISPONIBLES:
 - theologien: Père Thomas d'Aquin - Doctrine, dogme, morale, Catéchisme
@@ -274,7 +290,7 @@ Question: ${question}`;
     }
 
     // Phase 3: Synthèse par l'Orchestrateur
-    const synthesePrompt = `Tu es Monseigneur l'Orchestrateur. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
+    const synthesePrompt = `Tu es l'orchestreur assistant en chef. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
 
 QUESTION POSÉE: ${question}
 
