@@ -19,35 +19,46 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        stream: true,
-      }),
-    });
+    const anthropicMessages = messages
+      .filter((m: { role: string; content: string }) => m.role !== "system")
+      .map((m: { role: string; content: string }) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+    const callAnthropic = async (model: string) =>
+      fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: anthropicMessages,
+          stream: true,
+        }),
+      });
+
+    let response = await callAnthropic("claude-sonnet-4-20250514");
+    if (response.status === 404) {
+      console.warn("Claude Sonnet 4 not available, falling back to Claude 3.7 Sonnet");
+      response = await callAnthropic("claude-3-7-sonnet-20250219");
+    }
 
     if (!response.ok) {
       const t = await response.text();
       console.error("Anthropic API error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requêtes atteinte, réessayez plus tard." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
