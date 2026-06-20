@@ -43,10 +43,10 @@ serve(async (req) => {
         }),
       });
 
-    let response = await callAnthropic("claude-3-5-sonnet-20241022");
+    let response = await callAnthropic("claude-3-5-sonnet-latest");
     if (response.status === 404) {
       console.warn("Claude 3.5 Sonnet not available, falling back to Claude 3 Opus");
-      response = await callAnthropic("claude-3-opus-20240229");
+      response = await callAnthropic("claude-3-opus-latest");
     }
 
     if (!response.ok) {

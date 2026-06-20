@@ -195,8 +195,8 @@ async function callAnthropic(messages: Message[], model: string): Promise<string
 
 async function callAI(
   messages: Message[],
-  model = "claude-3-5-sonnet-20241022",
-  fallbackModel = "claude-3-opus-20240229"
+  model = "claude-3-5-sonnet-latest",
+  fallbackModel = "claude-3-opus-latest"
 ): Promise<string> {
   try {
     return await callAnthropic(messages, model);
@@ -312,7 +312,7 @@ Format ta réponse en markdown avec une belle mise en page.`;
     const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ], "claude-3-5-sonnet-20241022");
+    ], "claude-3-5-sonnet-latest");
 
     return jsonResponse({
       success: true,

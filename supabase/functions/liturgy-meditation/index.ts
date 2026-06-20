@@ -109,10 +109,10 @@ Rédige une méditation homilétique complète pour aider le fidèle à approfon
 
     let meditation = "";
     try {
-      meditation = await callClaude("claude-3-5-sonnet-20241022");
+      meditation = await callClaude("claude-3-5-sonnet-latest");
     } catch (e) {
       console.warn("Claude 3.5 Sonnet not available, falling back to Claude 3 Opus:", e);
-      meditation = await callClaude("claude-3-opus-20240229");
+      meditation = await callClaude("claude-3-opus-latest");
     }
 
     return new Response(
