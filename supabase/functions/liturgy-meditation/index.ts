@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+
 
 
 function stripHtml(html: string): string {
