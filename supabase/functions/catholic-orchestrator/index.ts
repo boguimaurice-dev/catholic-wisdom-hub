@@ -205,7 +205,7 @@ Question: ${question}`;
     const analyseResponse = await callLovableAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
-    ]);
+    ], "google/gemini-3-flash-preview");
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
