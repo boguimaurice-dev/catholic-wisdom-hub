@@ -202,7 +202,7 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme:
 
 Question: ${question}`;
 
-    const analyseResponse = await callAI([
+    const analyseResponse = await callLovableAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
     ]);
@@ -234,7 +234,7 @@ Question: ${question}`;
         content: msg.content
       }));
 
-      const expertResponse = await callAI([
+      const expertResponse = await callLovableAI([
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
@@ -268,10 +268,10 @@ Crée une réponse unifiée et bien structurée qui:
 
 Format ta réponse en markdown avec une belle mise en page.`;
 
-    const syntheseResponse = await callAI([
+    const syntheseResponse = await callLovableAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ], "claude-3-5-sonnet-latest");
+    ]);
 
     return jsonResponse({
       success: true,
