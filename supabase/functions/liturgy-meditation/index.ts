@@ -5,9 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
-
-
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -61,7 +59,7 @@ serve(async (req) => {
         ? "Responda em português."
         : "Réponds en français.";
 
-    const systemPrompt = `Tu es l'orchestrateur assistant en chef, au service de la prière et de la méditation catholique. Tu rédiges une méditation homilétique profonde, fidèle à la Tradition de l'Église, à partir des lectures du jour. ${langInstruction}
+    const systemPrompt = `Tu es l'orchestreur assistant en chef, au service de la prière et de la méditation catholique. Tu rédiges une méditation homilétique profonde, fidèle à la Tradition de l'Église, à partir des lectures du jour. ${langInstruction}
 
 Structure ta méditation ainsi :
 1. Une introduction qui situe le jour liturgique
@@ -82,38 +80,38 @@ ${lecturesText}
 
 Rédige une méditation homilétique complète pour aider le fidèle à approfondir ces textes.`;
 
-    const callClaude = async (model: string) => {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: aiRes.status === 429
+            ? "Limite de requêtes atteinte. Réessayez dans quelques instants."
+            : aiRes.status === 402
+            ? "Crédits épuisés. Veuillez recharger votre compte."
+            : `Erreur IA: ${errText.slice(0, 200)}`,
         }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Erreur IA: ${response.status} ${text.slice(0, 200)}`);
-      }
-
-      const data = await response.json();
-      return data.content?.[0]?.text || "";
-    };
-
-    let meditation = "";
-    try {
-      meditation = await callClaude("claude-3-5-sonnet-latest");
-    } catch (e) {
-      console.warn("Claude 3.5 Sonnet not available, falling back to Claude 3 Opus:", e);
-      meditation = await callClaude("claude-3-opus-latest");
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const aiData = await aiRes.json();
+    const meditation = aiData.choices?.[0]?.message?.content || "";
 
     return new Response(
       JSON.stringify({

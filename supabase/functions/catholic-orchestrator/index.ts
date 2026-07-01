@@ -133,80 +133,39 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
-async function callAnthropic(messages: Message[], model: string): Promise<string> {
-  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!ANTHROPIC_API_KEY) throw new HttpError(500, "ANTHROPIC_API_KEY not configured");
+async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
 
-  // Séparer le system prompt des messages
-  const systemMessage = messages.find(m => m.role === "system");
-  const otherMessages = messages.filter(m => m.role !== "system");
-
-  const body: Record<string, unknown> = {
-    model,
-    max_tokens: 4096,
-    messages: otherMessages.map(m => ({ role: m.role, content: m.content })),
-  };
-  if (systemMessage) {
-    body.system = systemMessage.content;
-  }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      max_tokens: 4096,
+    }),
   });
 
   if (!response.ok) {
     const error = await response.text();
     if (response.status === 429) {
-      console.warn("Anthropic rate limit:", error);
+      console.warn("Lovable AI rate limit:", error);
       throw new HttpError(429, "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
     }
     if (response.status === 402) {
-      console.warn("Anthropic payment error:", error);
+      console.warn("Lovable AI payment error:", error);
       throw new HttpError(402, "Crédits épuisés. Veuillez recharger votre compte.");
     }
-    if (response.status === 400) {
-      console.warn("Anthropic 400 error:", error);
-      // Content filtering or invalid request - return graceful fallback
-      if (error.includes("content filtering") || error.includes("blocked")) {
-        return "Je ne suis pas en mesure de répondre à cette question spécifique en raison des politiques de filtrage de contenu. Veuillez reformuler votre question ou poser une question différente.";
-      }
-      throw new HttpError(400, "La requête n'a pas pu être traitée. Veuillez reformuler votre question.");
-    }
-    console.error("Anthropic error:", response.status, error);
+    console.error("Lovable AI error:", response.status, error);
     throw new HttpError(response.status, `Erreur IA: ${response.status}`);
   }
 
   const data = await response.json();
-  const text = data.content?.[0]?.text || "";
-
-  // Handle stop_reason = "end_turn" with empty content (another form of content filtering)
-  if (!text && data.stop_reason === "end_turn") {
-    return "Je ne suis pas en mesure de fournir une réponse complète à cette question. Veuillez la reformuler ou essayer une question différente.";
-  }
-
-  return text;
-}
-
-async function callAI(
-  messages: Message[],
-  model = "claude-3-5-sonnet-latest",
-  fallbackModel = "claude-3-opus-latest"
-): Promise<string> {
-  try {
-    return await callAnthropic(messages, model);
-  } catch (e) {
-    if (e instanceof HttpError && e.status === 404) {
-      console.warn(`Model ${model} not available, falling back to ${fallbackModel}`);
-      return await callAnthropic(messages, fallbackModel);
-    }
-    throw e;
-  }
+  return data.choices?.[0]?.message?.content || "";
 }
 
 serve(async (req) => {
@@ -243,10 +202,10 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme:
 
 Question: ${question}`;
 
-    const analyseResponse = await callAI([
+    const analyseResponse = await callLovableAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
-    ]);
+    ], "google/gemini-3-flash-preview");
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
@@ -263,31 +222,31 @@ Question: ${question}`;
       analyseRaison = "Consultation théologique par défaut";
     }
 
-    // Phase 2: Consultation des experts
-    const expertResponses: { expert: string; name: string; title: string; response: string }[] = [];
+    // Phase 2: Consultation des experts (parallèle)
+    const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
 
-    for (const expertKey of selectedExperts) {
+    const expertPromises = selectedExperts.map(async (expertKey) => {
       const expert = EXPERTS[expertKey as keyof typeof EXPERTS];
-      if (!expert) continue;
+      if (!expert) return null;
 
-      const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content
-      }));
-
-      const expertResponse = await callAI([
+      const expertResponse = await callLovableAI([
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
-      ]);
+      ], "google/gemini-3-flash-preview");
 
-      expertResponses.push({
+      return {
         expert: expertKey,
         name: expert.name,
         title: expert.title,
         response: expertResponse
-      });
-    }
+      };
+    });
+
+    const expertResponses = (await Promise.all(expertPromises)).filter(Boolean) as { expert: string; name: string; title: string; response: string }[];
 
     // Phase 3: Synthèse par l'Orchestrateur
     const synthesePrompt = `Tu es l'orchestreur assistant en chef. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
@@ -309,10 +268,10 @@ Crée une réponse unifiée et bien structurée qui:
 
 Format ta réponse en markdown avec une belle mise en page.`;
 
-    const syntheseResponse = await callAI([
+    const syntheseResponse = await callLovableAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ], "claude-3-5-sonnet-latest");
+    ]);
 
     return jsonResponse({
       success: true,
