@@ -133,7 +133,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
-async function callLovableAI(messages: Message[]): Promise<string> {
+async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
 
@@ -144,7 +144,7 @@ async function callLovableAI(messages: Message[]): Promise<string> {
       "Authorization": `Bearer ${LOVABLE_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
+      model,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 4096,
     }),
