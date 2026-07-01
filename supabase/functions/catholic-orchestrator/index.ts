@@ -222,31 +222,31 @@ Question: ${question}`;
       analyseRaison = "Consultation théologique par défaut";
     }
 
-    // Phase 2: Consultation des experts
-    const expertResponses: { expert: string; name: string; title: string; response: string }[] = [];
+    // Phase 2: Consultation des experts (parallèle)
+    const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
 
-    for (const expertKey of selectedExperts) {
+    const expertPromises = selectedExperts.map(async (expertKey) => {
       const expert = EXPERTS[expertKey as keyof typeof EXPERTS];
-      if (!expert) continue;
-
-      const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content
-      }));
+      if (!expert) return null;
 
       const expertResponse = await callLovableAI([
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
-      ]);
+      ], "google/gemini-3-flash-preview");
 
-      expertResponses.push({
+      return {
         expert: expertKey,
         name: expert.name,
         title: expert.title,
         response: expertResponse
-      });
-    }
+      };
+    });
+
+    const expertResponses = (await Promise.all(expertPromises)).filter(Boolean) as { expert: string; name: string; title: string; response: string }[];
 
     // Phase 3: Synthèse par l'Orchestrateur
     const synthesePrompt = `Tu es l'orchestreur assistant en chef. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
