@@ -20,6 +20,11 @@ export function LandingHeader() {
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <Link to="/liturgy" className="hidden sm:block">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+              📖 Liturgie du jour
+            </Button>
+          </Link>
           <LanguageSelector />
           <ThemeToggle />
           <Link to="/auth" className="hidden sm:block">
