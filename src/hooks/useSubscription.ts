@@ -91,28 +91,18 @@ export function useSubscription() {
   };
 
   const incrementUsage = async () => {
+    // Server-side (edge function) increments the daily_usage row after a successful
+    // consultation. Client writes are no longer allowed by RLS. We just refresh
+    // the local counter from the database.
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
-
-    const { data: existing } = await supabase
+    const { data } = await supabase
       .from("daily_usage")
-      .select("*")
+      .select("consultation_count")
       .eq("user_id", user.id)
       .eq("usage_date", today)
-      .single();
-
-    if (existing) {
-      await supabase
-        .from("daily_usage")
-        .update({ consultation_count: existing.consultation_count + 1 })
-        .eq("id", existing.id);
-      setDailyUsage(existing.consultation_count + 1);
-    } else {
-      await supabase
-        .from("daily_usage")
-        .insert({ user_id: user.id, usage_date: today, consultation_count: 1 });
-      setDailyUsage(1);
-    }
+      .maybeSingle();
+    setDailyUsage(data?.consultation_count ?? dailyUsage + 1);
   };
 
   const remainingConsultations = () => {

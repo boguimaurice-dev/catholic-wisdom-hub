@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -174,6 +175,71 @@ serve(async (req) => {
   }
 
   try {
+    // --- Authentication ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: authErr } = await userClient.auth.getUser();
+    if (authErr || !userData?.user) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    const userId = userData.user.id;
+
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // --- Server-side quota check ---
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Determine plan
+    const { data: subs } = await admin
+      .from("user_subscriptions")
+      .select("plan_id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    let maxPerDay = 3;
+    if (subs && subs.length > 0) {
+      const { data: plan } = await admin
+        .from("plans")
+        .select("max_consultations_per_day")
+        .eq("id", subs[0].plan_id)
+        .single();
+      if (plan?.max_consultations_per_day) maxPerDay = plan.max_consultations_per_day;
+    } else {
+      const { data: basic } = await admin
+        .from("plans")
+        .select("max_consultations_per_day")
+        .eq("slug", "basique")
+        .single();
+      if (basic?.max_consultations_per_day) maxPerDay = basic.max_consultations_per_day;
+    }
+
+    const { data: usageRow } = await admin
+      .from("daily_usage")
+      .select("id, consultation_count")
+      .eq("user_id", userId)
+      .eq("usage_date", today)
+      .maybeSingle();
+
+    const currentCount = usageRow?.consultation_count ?? 0;
+    if (currentCount >= maxPerDay) {
+      return jsonResponse({
+        error: `Limite quotidienne atteinte (${maxPerDay} consultations/jour). Passez à un plan supérieur.`,
+        errorType: "quota_exceeded",
+        success: false,
+      }, 403);
+    }
+
     const { question, conversationHistory = [] } = await req.json();
 
     if (!question) {
@@ -209,7 +275,7 @@ Question: ${question}`;
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
-    
+
     try {
       const jsonMatch = analyseResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -272,6 +338,20 @@ Format ta réponse en markdown avec une belle mise en page.`;
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
     ]);
+
+    // --- Increment quota server-side ---
+    if (usageRow) {
+      await admin
+        .from("daily_usage")
+        .update({ consultation_count: currentCount + 1 })
+        .eq("id", usageRow.id);
+    } else {
+      await admin.from("daily_usage").insert({
+        user_id: userId,
+        usage_date: today,
+        consultation_count: 1,
+      });
+    }
 
     return jsonResponse({
       success: true,
