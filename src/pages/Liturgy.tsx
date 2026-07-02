@@ -159,6 +159,15 @@ export default function Liturgy() {
             )}
             <LanguageSelector variant="ghost" />
             <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              aria-label="Partager"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
