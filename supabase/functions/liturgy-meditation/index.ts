@@ -10,10 +10,18 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 function stripHtml(html: string): string {
   if (!html) return "";
-  return html
+
+  let sanitized = html
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<\/p>/gi, "\n\n");
+
+  let previous: string;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]+>/g, "");
+  } while (sanitized !== previous);
+
+  return sanitized
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
