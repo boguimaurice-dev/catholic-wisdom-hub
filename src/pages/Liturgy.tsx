@@ -5,7 +5,7 @@ import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,6 +16,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTTS } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { readCache, writeCache, prefetchWeek } from "@/lib/liturgyCache";
 
 interface Lecture {
   type: string;
@@ -35,24 +36,7 @@ interface LiturgyData {
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-meditation`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const CACHE_PREFIX = "liturgy-cache-v1:";
 
-function cacheKey(date: string, lang: string) {
-  return `${CACHE_PREFIX}${lang}:${date}`;
-}
-
-function readCache(date: string, lang: string): LiturgyData | null {
-  try {
-    const raw = localStorage.getItem(cacheKey(date, lang));
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function writeCache(date: string, lang: string, data: LiturgyData) {
-  try {
-    localStorage.setItem(cacheKey(date, lang), JSON.stringify({ ...data, _cachedAt: Date.now() }));
-  } catch { /* quota */ }
-}
 
 const FONT_SIZES = ["text-sm", "text-base", "text-lg", "text-xl"] as const;
 
@@ -99,6 +83,31 @@ export default function Liturgy() {
   }, [language, stopSpeaking]);
 
   useEffect(() => { load(date); }, [load, date]);
+
+  // Prefetch the whole week for offline access; re-run when back online.
+  useEffect(() => {
+    const ctrl = new AbortController();
+    prefetchWeek(language, 7, ctrl.signal);
+    const onOnline = () => prefetchWeek(language, 7, ctrl.signal);
+    window.addEventListener("online", onOnline);
+    return () => { ctrl.abort(); window.removeEventListener("online", onOnline); };
+  }, [language]);
+
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/liturgy`;
+    const title = `Liturgie du ${format(date, "d MMMM yyyy", { locale: fr })}`;
+    const text = data?.informations?.ligne1
+      ? `${title} — ${data.informations.ligne1}`
+      : title;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        toast.success("Lien copié dans le presse-papier");
+      }
+    } catch { /* user cancelled */ }
+  }, [date, data]);
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -150,6 +159,15 @@ export default function Liturgy() {
             )}
             <LanguageSelector variant="ghost" />
             <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              aria-label="Partager"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
