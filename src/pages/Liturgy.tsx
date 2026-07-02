@@ -84,6 +84,31 @@ export default function Liturgy() {
 
   useEffect(() => { load(date); }, [load, date]);
 
+  // Prefetch the whole week for offline access; re-run when back online.
+  useEffect(() => {
+    const ctrl = new AbortController();
+    prefetchWeek(language, 7, ctrl.signal);
+    const onOnline = () => prefetchWeek(language, 7, ctrl.signal);
+    window.addEventListener("online", onOnline);
+    return () => { ctrl.abort(); window.removeEventListener("online", onOnline); };
+  }, [language]);
+
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/liturgy`;
+    const title = `Liturgie du ${format(date, "d MMMM yyyy", { locale: fr })}`;
+    const text = data?.informations?.ligne1
+      ? `${title} — ${data.informations.ligne1}`
+      : title;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        toast.success("Lien copié dans le presse-papier");
+      }
+    } catch { /* user cancelled */ }
+  }, [date, data]);
+
   useEffect(() => {
     const on = () => setOffline(false);
     const off = () => setOffline(true);
