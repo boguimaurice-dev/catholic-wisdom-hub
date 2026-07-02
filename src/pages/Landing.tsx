@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LandingPricing } from "@/components/LandingPricing";
@@ -8,8 +9,31 @@ import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
+const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-meditation`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const CACHE_PREFIX = "liturgy-cache-v1:";
+
 export default function Landing() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // Prefetch today's liturgy in the background so /liturgy opens instantly & works offline.
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${CACHE_PREFIX}${language}:${today}`;
+    if (localStorage.getItem(key)) return;
+    const ctrl = new AbortController();
+    fetch(FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+      body: JSON.stringify({ date: today, language }),
+      signal: ctrl.signal,
+    })
+      .then((r) => r.json())
+      .then((json) => { if (json?.success) localStorage.setItem(key, JSON.stringify({ ...json, _cachedAt: Date.now() })); })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [language]);
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
