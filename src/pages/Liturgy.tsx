@@ -5,7 +5,7 @@ import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,6 +16,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTTS } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { readCache, writeCache, prefetchWeek } from "@/lib/liturgyCache";
 
 interface Lecture {
   type: string;
@@ -35,24 +36,7 @@ interface LiturgyData {
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-meditation`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const CACHE_PREFIX = "liturgy-cache-v1:";
 
-function cacheKey(date: string, lang: string) {
-  return `${CACHE_PREFIX}${lang}:${date}`;
-}
-
-function readCache(date: string, lang: string): LiturgyData | null {
-  try {
-    const raw = localStorage.getItem(cacheKey(date, lang));
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function writeCache(date: string, lang: string, data: LiturgyData) {
-  try {
-    localStorage.setItem(cacheKey(date, lang), JSON.stringify({ ...data, _cachedAt: Date.now() }));
-  } catch { /* quota */ }
-}
 
 const FONT_SIZES = ["text-sm", "text-base", "text-lg", "text-xl"] as const;
 
