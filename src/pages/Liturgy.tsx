@@ -5,18 +5,23 @@ import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type, Share2,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTTS } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { readCache, writeCache, prefetchWeek } from "@/lib/liturgyCache";
+import { readCache, writeCache, prefetchWeek, refreshStaleCache } from "@/lib/liturgyCache";
+import jsPDF from "jspdf";
+
 
 interface Lecture {
   type: string;
@@ -84,30 +89,139 @@ export default function Liturgy() {
 
   useEffect(() => { load(date); }, [load, date]);
 
-  // Prefetch the whole week for offline access; re-run when back online.
+  // Auto-update cached liturgies silently on mount and each time we come back online.
   useEffect(() => {
     const ctrl = new AbortController();
     prefetchWeek(language, 7, ctrl.signal);
-    const onOnline = () => prefetchWeek(language, 7, ctrl.signal);
+    refreshStaleCache(language, 6 * 60 * 60 * 1000, ctrl.signal).then(() => {
+      // If current visible date got refreshed in the background, reload silently.
+      const fresh = readCache(dateStr, language);
+      if (fresh && (!data?._cachedAt || (fresh._cachedAt ?? 0) > (data._cachedAt ?? 0))) {
+        setData(fresh);
+      }
+    });
+    const onOnline = () => {
+      prefetchWeek(language, 7, ctrl.signal);
+      refreshStaleCache(language, 0, ctrl.signal);
+    };
     window.addEventListener("online", onOnline);
     return () => { ctrl.abort(); window.removeEventListener("online", onOnline); };
+  }, [language, dateStr, data?._cachedAt]);
+
+  const [downloading, setDownloading] = useState<null | "week" | "month">(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const downloadRange = useCallback(async (days: number, label: "week" | "month") => {
+    if (!navigator.onLine) { toast.error("Connexion internet requise pour télécharger."); return; }
+    setDownloading(label);
+    setProgress({ done: 0, total: days });
+    const t = toast.loading(`Téléchargement de ${days} jours…`);
+    try {
+      await prefetchWeek(language, days, undefined, (done, total) => setProgress({ done, total }));
+      toast.success(`${days} jours disponibles hors-ligne.`, { id: t });
+    } catch {
+      toast.error("Téléchargement interrompu.", { id: t });
+    } finally {
+      setDownloading(null);
+      setProgress(null);
+    }
   }, [language]);
 
-  const handleShare = useCallback(async () => {
-    const url = `${window.location.origin}/liturgy`;
-    const title = `Liturgie du ${format(date, "d MMMM yyyy", { locale: fr })}`;
-    const text = data?.informations?.ligne1
-      ? `${title} — ${data.informations.ligne1}`
-      : title;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, text, url });
-      } else {
-        await navigator.clipboard.writeText(`${text}\n${url}`);
-        toast.success("Lien copié dans le presse-papier");
+  const buildPdf = useCallback(() => {
+    if (!data) return null;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const maxW = pageW - margin * 2;
+    let y = margin;
+
+    const ensureSpace = (h: number) => {
+      if (y + h > pageH - margin) { doc.addPage(); y = margin; }
+    };
+    const writeBlock = (text: string, opts: { size: number; bold?: boolean; italic?: boolean; align?: "left" | "center" | "justify"; color?: [number, number, number]; gap?: number }) => {
+      if (!text) return;
+      doc.setFont("times", opts.bold ? (opts.italic ? "bolditalic" : "bold") : opts.italic ? "italic" : "normal");
+      doc.setFontSize(opts.size);
+      const [r, g, b] = opts.color ?? [20, 20, 40];
+      doc.setTextColor(r, g, b);
+      const lines = doc.splitTextToSize(text, maxW);
+      const lh = opts.size * 1.35;
+      for (const line of lines) {
+        ensureSpace(lh);
+        const x = opts.align === "center" ? pageW / 2 : margin;
+        doc.text(line, x, y, { align: opts.align === "center" ? "center" : "left", maxWidth: maxW });
+        y += lh;
       }
-    } catch { /* user cancelled */ }
-  }, [date, data]);
+      y += opts.gap ?? 6;
+    };
+
+    // Header
+    writeBlock(`Liturgie du ${format(date, "EEEE d MMMM yyyy", { locale: fr })}`, { size: 18, bold: true, align: "center", color: [26, 26, 46], gap: 4 });
+    if (data.informations?.ligne1) writeBlock(data.informations.ligne1, { size: 12, italic: true, align: "center", color: [90, 90, 110], gap: 2 });
+    if (data.informations?.fete) writeBlock(data.informations.fete, { size: 11, italic: true, align: "center", color: [120, 120, 140] });
+    if (data.informations?.couleur) writeBlock(`Couleur liturgique : ${data.informations.couleur}`, { size: 10, align: "center", color: [201, 168, 76], gap: 10 });
+
+    // Separator
+    ensureSpace(12);
+    doc.setDrawColor(201, 168, 76);
+    doc.line(margin, y, pageW - margin, y);
+    y += 14;
+
+    // Lectures
+    writeBlock("Textes du jour", { size: 14, bold: true, color: [26, 26, 46], gap: 6 });
+    for (const l of data.lectures) {
+      writeBlock(labelFor(l.type).toUpperCase(), { size: 10, bold: true, color: [201, 168, 76], gap: 2 });
+      if (l.reference) writeBlock(l.reference, { size: 10, italic: true, color: [110, 110, 130], gap: 2 });
+      if (l.titre) writeBlock(`« ${l.titre} »`, { size: 11, italic: true, color: [26, 26, 46], gap: 4 });
+      if (l.refrain) writeBlock(`R/ ${l.refrain}`, { size: 11, italic: true, color: [60, 60, 90], gap: 6 });
+      writeBlock(l.contenu, { size: 11, color: [30, 30, 50], gap: 12 });
+    }
+
+    // Méditation
+    if (data.meditation) {
+      ensureSpace(24);
+      doc.setDrawColor(201, 168, 76);
+      doc.line(margin, y, pageW - margin, y);
+      y += 14;
+      writeBlock("Méditation homilétique", { size: 14, bold: true, color: [26, 26, 46], gap: 8 });
+      writeBlock(data.meditation, { size: 11, color: [30, 30, 50], gap: 6 });
+    }
+
+    // Footer page numbers
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFont("times", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 160);
+      doc.text(`${i} / ${pages}`, pageW / 2, pageH - 20, { align: "center" });
+    }
+    return doc;
+  }, [data, date]);
+
+  const handleShare = useCallback(async () => {
+    if (!data) return;
+    const doc = buildPdf();
+    if (!doc) return;
+    const fileName = `liturgie-${format(date, "yyyy-MM-dd")}.pdf`;
+    const blob = doc.output("blob");
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    const title = `Liturgie du ${format(date, "d MMMM yyyy", { locale: fr })}`;
+    const text = data.informations?.ligne1 ? `${title} — ${data.informations.ligne1}` : title;
+    try {
+      // Prefer sharing the PDF file when supported (mobile).
+      const navAny = navigator as any;
+      if (navAny.canShare && navAny.canShare({ files: [file] })) {
+        await navAny.share({ title, text, files: [file] });
+        return;
+      }
+    } catch { /* fallback below */ }
+    // Fallback: download the PDF.
+    doc.save(fileName);
+    toast.success("Homélie enregistrée en PDF.");
+  }, [data, date, buildPdf]);
+
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -159,15 +273,41 @@ export default function Liturgy() {
             )}
             <LanguageSelector variant="ghost" />
             <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Télécharger pour hors-ligne"
+                  disabled={!!downloading}
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => downloadRange(7, "week")}>
+                  <Download className="w-4 h-4 mr-2" /> Télécharger la semaine
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadRange(31, "month")}>
+                  <Download className="w-4 h-4 mr-2" /> Télécharger le mois
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                  Mise à jour auto dès la connexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              aria-label="Partager"
+              aria-label="Partager en PDF"
               className="text-primary-foreground hover:bg-primary-foreground/10"
             >
-              <Share2 className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
             </Button>
+
           </div>
         </div>
       </header>
@@ -205,6 +345,23 @@ export default function Liturgy() {
             Aujourd'hui
           </Button>
         </div>
+
+        {progress && (
+          <div className="text-xs text-muted-foreground">
+            <div className="flex justify-between mb-1">
+              <span>Téléchargement hors-ligne…</span>
+              <span>{progress.done}/{progress.total}</span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-secondary transition-all"
+                style={{ width: `${(progress.done / progress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+
 
         {/* Reading controls */}
         <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">

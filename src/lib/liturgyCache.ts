@@ -41,18 +41,51 @@ async function fetchDay(date: string, lang: string, signal?: AbortSignal) {
 /**
  * Prefetch liturgy for the next `days` days (including today) if not already cached,
  * or if the cache entry is older than 24h. Runs sequentially to be gentle on the API.
+ * Optional onProgress callback receives (done, total).
  */
-export async function prefetchWeek(lang: string, days = 7, signal?: AbortSignal) {
+export async function prefetchWeek(
+  lang: string,
+  days = 7,
+  signal?: AbortSignal,
+  onProgress?: (done: number, total: number) => void,
+) {
   if (!navigator.onLine) return;
   const now = Date.now();
+  let done = 0;
   for (let i = 0; i < days; i++) {
     if (signal?.aborted) return;
     const day = format(addDays(new Date(), i), "yyyy-MM-dd");
     const cached = readCache(day, lang);
     const fresh = cached?._cachedAt && now - cached._cachedAt < 24 * 60 * 60 * 1000;
-    if (fresh) continue;
-    try {
-      await fetchDay(day, lang, signal);
-    } catch { /* ignore, offline or aborted */ }
+    if (!fresh) {
+      try { await fetchDay(day, lang, signal); } catch { /* ignore */ }
+    }
+    done++;
+    onProgress?.(done, days);
   }
 }
+
+/**
+ * Force refresh of all cached days for a language (background auto-update).
+ * Only refreshes entries older than `maxAgeMs`.
+ */
+export async function refreshStaleCache(lang: string, maxAgeMs = 6 * 60 * 60 * 1000, signal?: AbortSignal) {
+  if (!navigator.onLine) return;
+  const now = Date.now();
+  const prefix = `${CACHE_PREFIX}${lang}:`;
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k?.startsWith(prefix)) keys.push(k);
+  }
+  for (const k of keys) {
+    if (signal?.aborted) return;
+    const date = k.slice(prefix.length);
+    try {
+      const raw = JSON.parse(localStorage.getItem(k) || "{}");
+      if (raw?._cachedAt && now - raw._cachedAt < maxAgeMs) continue;
+      await fetchDay(date, lang, signal);
+    } catch { /* ignore */ }
+  }
+}
+
