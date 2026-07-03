@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard } from "lucide-react";
+import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard, Send, Bell, ShieldCheck, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,9 @@ export default function Pricing() {
   const [momoProvider, setMomoProvider] = useState<"orange" | "mtn" | "moov" | "">("");
   const [momoLoading, setMomoLoading] = useState(false);
   const [momoStatus, setMomoStatus] = useState<string | null>(null);
+  type MomoStep = "idle" | "requesting" | "notified" | "awaiting" | "confirmed" | "failed";
+  const [momoStep, setMomoStep] = useState<MomoStep>("idle");
+  const [momoErrorMsg, setMomoErrorMsg] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -123,6 +126,8 @@ export default function Pricing() {
     setMomoPhone("");
     setMomoProvider("");
     setMomoStatus(null);
+    setMomoStep("idle");
+    setMomoErrorMsg(null);
     setMomoOpen(true);
   };
 
@@ -133,13 +138,16 @@ export default function Pricing() {
     if (!provider) return toast.error("Choisissez votre opérateur");
 
     setMomoLoading(true);
-    setMomoStatus("Envoi de la notification à votre opérateur…");
+    setMomoErrorMsg(null);
+    setMomoStep("requesting");
+    setMomoStatus("Envoi de la demande à Paystack…");
     try {
       const { data, error } = await supabase.functions.invoke("paystack-charge-momo", {
         body: { planSlug: momoPlanSlug, phone: momoPhone, provider },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Échec");
+      setMomoStep("notified");
       setMomoStatus(
         data.display_text ||
           `Notification envoyée à ${provider.toUpperCase()}. Autorisez le paiement sur votre téléphone.`
@@ -147,13 +155,16 @@ export default function Pricing() {
       toast.success("Vérifiez votre téléphone pour autoriser le paiement");
       const ref = data.reference;
       if (ref) {
+        setMomoStep("awaiting");
         for (let i = 0; i < 12; i++) {
           await new Promise((r) => setTimeout(r, 5000));
           const { data: v } = await supabase.functions.invoke("paystack-verify", { body: { reference: ref } });
           if (v?.success) {
+            setMomoStep("confirmed");
+            setMomoStatus("Paiement confirmé !");
             toast.success("Paiement confirmé !");
-            setMomoOpen(false);
             await refresh();
+            setTimeout(() => setMomoOpen(false), 1500);
             return;
           }
         }
@@ -162,6 +173,8 @@ export default function Pricing() {
     } catch (err) {
       const m = err instanceof Error ? err.message : "Erreur";
       toast.error(m);
+      setMomoStep("failed");
+      setMomoErrorMsg(m);
       setMomoStatus(m);
     } finally {
       setMomoLoading(false);
@@ -385,10 +398,76 @@ export default function Pricing() {
               </RadioGroup>
             </div>
 
-            {momoStatus && (
-              <div className="text-sm bg-muted/50 border border-border rounded-md p-3">
-                {momoLoading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
-                {momoStatus}
+            {momoStep !== "idle" && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+                {(() => {
+                  const order: MomoStep[] = ["requesting", "notified", "awaiting", "confirmed"];
+                  const isFailed = momoStep === "failed";
+                  const currentIdx = isFailed ? -1 : order.indexOf(momoStep);
+                  const steps = [
+                    { key: "requesting", label: "Demande envoyée à Paystack", Icon: Send },
+                    { key: "notified", label: "Notification envoyée à l'opérateur", Icon: Bell },
+                    { key: "awaiting", label: "Attente de votre confirmation", Icon: Clock },
+                    { key: "confirmed", label: "Paiement confirmé", Icon: ShieldCheck },
+                  ] as const;
+                  return (
+                    <>
+                      {steps.map((s, idx) => {
+                        const done = !isFailed && idx < currentIdx;
+                        const active = !isFailed && idx === currentIdx;
+                        const pending = !isFailed && idx > currentIdx;
+                        const Icon = s.Icon;
+                        return (
+                          <div key={s.key} className="flex items-center gap-3 text-sm">
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${
+                                done
+                                  ? "bg-primary/15 border-primary text-primary"
+                                  : active
+                                  ? "bg-secondary/20 border-secondary text-secondary"
+                                  : "bg-background border-border text-muted-foreground"
+                              }`}
+                            >
+                              {active ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : done ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <Icon className="w-4 h-4" />
+                              )}
+                            </div>
+                            <span
+                              className={
+                                done
+                                  ? "text-foreground"
+                                  : active
+                                  ? "text-foreground font-medium"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {s.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {isFailed && (
+                        <div className="flex items-start gap-3 text-sm pt-1">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border bg-destructive/15 border-destructive text-destructive">
+                            <XCircle className="w-4 h-4" />
+                          </div>
+                          <span className="text-destructive font-medium">
+                            Échec : {momoErrorMsg || "Paiement refusé"}
+                          </span>
+                        </div>
+                      )}
+                      {momoStatus && (
+                        <p className="text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
+                          {momoStatus}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
