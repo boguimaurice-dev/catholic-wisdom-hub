@@ -5,18 +5,23 @@ import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type, Share2,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTTS } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { readCache, writeCache, prefetchWeek } from "@/lib/liturgyCache";
+import { readCache, writeCache, prefetchWeek, refreshStaleCache } from "@/lib/liturgyCache";
+import jsPDF from "jspdf";
+
 
 interface Lecture {
   type: string;
