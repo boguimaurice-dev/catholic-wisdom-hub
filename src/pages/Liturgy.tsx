@@ -273,15 +273,41 @@ export default function Liturgy() {
             )}
             <LanguageSelector variant="ghost" />
             <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Télécharger pour hors-ligne"
+                  disabled={!!downloading}
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => downloadRange(7, "week")}>
+                  <Download className="w-4 h-4 mr-2" /> Télécharger la semaine
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadRange(31, "month")}>
+                  <Download className="w-4 h-4 mr-2" /> Télécharger le mois
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                  Mise à jour auto dès la connexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              aria-label="Partager"
+              aria-label="Partager en PDF"
               className="text-primary-foreground hover:bg-primary-foreground/10"
             >
-              <Share2 className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
             </Button>
+
           </div>
         </div>
       </header>
