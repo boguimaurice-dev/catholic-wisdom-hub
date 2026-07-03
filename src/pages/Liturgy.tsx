@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText, ArrowUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
