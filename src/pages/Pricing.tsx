@@ -398,10 +398,76 @@ export default function Pricing() {
               </RadioGroup>
             </div>
 
-            {momoStatus && (
-              <div className="text-sm bg-muted/50 border border-border rounded-md p-3">
-                {momoLoading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
-                {momoStatus}
+            {momoStep !== "idle" && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+                {(() => {
+                  const order: MomoStep[] = ["requesting", "notified", "awaiting", "confirmed"];
+                  const isFailed = momoStep === "failed";
+                  const currentIdx = isFailed ? -1 : order.indexOf(momoStep);
+                  const steps = [
+                    { key: "requesting", label: "Demande envoyée à Paystack", Icon: Send },
+                    { key: "notified", label: "Notification envoyée à l'opérateur", Icon: Bell },
+                    { key: "awaiting", label: "Attente de votre confirmation", Icon: Clock },
+                    { key: "confirmed", label: "Paiement confirmé", Icon: ShieldCheck },
+                  ] as const;
+                  return (
+                    <>
+                      {steps.map((s, idx) => {
+                        const done = !isFailed && idx < currentIdx;
+                        const active = !isFailed && idx === currentIdx;
+                        const pending = !isFailed && idx > currentIdx;
+                        const Icon = s.Icon;
+                        return (
+                          <div key={s.key} className="flex items-center gap-3 text-sm">
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${
+                                done
+                                  ? "bg-primary/15 border-primary text-primary"
+                                  : active
+                                  ? "bg-secondary/20 border-secondary text-secondary"
+                                  : "bg-background border-border text-muted-foreground"
+                              }`}
+                            >
+                              {active ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : done ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <Icon className="w-4 h-4" />
+                              )}
+                            </div>
+                            <span
+                              className={
+                                done
+                                  ? "text-foreground"
+                                  : active
+                                  ? "text-foreground font-medium"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {s.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {isFailed && (
+                        <div className="flex items-start gap-3 text-sm pt-1">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border bg-destructive/15 border-destructive text-destructive">
+                            <XCircle className="w-4 h-4" />
+                          </div>
+                          <span className="text-destructive font-medium">
+                            Échec : {momoErrorMsg || "Paiement refusé"}
+                          </span>
+                        </div>
+                      )}
+                      {momoStatus && (
+                        <p className="text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
+                          {momoStatus}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
