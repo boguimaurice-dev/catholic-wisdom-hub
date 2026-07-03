@@ -235,6 +235,16 @@ export default function Liturgy() {
 
   useEffect(() => { localStorage.setItem("liturgy-font-idx", String(fontIdx)); }, [fontIdx]);
 
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      setShowTopButton(scrollHeight > 0 && scrollTop / scrollHeight > 0.8);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const labelFor = (type: string) => {
     const map: Record<string, string> = {
       lecture_1: "Première lecture",
