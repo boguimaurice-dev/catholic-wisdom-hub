@@ -189,6 +189,17 @@ export default function Pricing() {
             <h1 className="font-serif text-lg sm:text-2xl font-bold">{t("plans.choosePlan")}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={handleSyncSubscriptions}
+              disabled={syncing}
+              variant="ghost"
+              size="sm"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+              title="Actualiser mes abonnements depuis Paystack"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline ml-1">Actualiser</span>
+            </Button>
             <Link to="/donation">
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Heart className="w-4 h-4" />
