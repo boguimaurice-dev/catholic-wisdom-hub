@@ -346,6 +346,23 @@ export default function Liturgy() {
           </Button>
         </div>
 
+        {progress && (
+          <div className="text-xs text-muted-foreground">
+            <div className="flex justify-between mb-1">
+              <span>Téléchargement hors-ligne…</span>
+              <span>{progress.done}/{progress.total}</span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-secondary transition-all"
+                style={{ width: `${(progress.done / progress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+
+
         {/* Reading controls */}
         <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
           <Type className="w-3.5 h-3.5" />
