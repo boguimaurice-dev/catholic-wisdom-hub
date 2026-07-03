@@ -272,22 +272,37 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Button
-                  onClick={() => handleSubscribe(plan.slug)}
-                  disabled={isCurrentPlan || processingPlan === plan.slug}
-                  variant={isPopular ? "default" : "outline"}
-                  className={`w-full ${isPopular ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : ""}`}
-                >
-                  {processingPlan === plan.slug ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isCurrentPlan ? (
-                    t("plans.currentPlan")
-                  ) : plan.price_amount === 0 ? (
-                    t("plans.currentPlan")
-                  ) : (
-                    t("plans.subscribe")
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => handleSubscribe(plan.slug)}
+                    disabled={isCurrentPlan || processingPlan === plan.slug}
+                    variant={isPopular ? "default" : "outline"}
+                    className={`w-full ${isPopular ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : ""}`}
+                  >
+                    {processingPlan === plan.slug ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isCurrentPlan ? (
+                      t("plans.currentPlan")
+                    ) : plan.price_amount === 0 ? (
+                      t("plans.currentPlan")
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Carte bancaire
+                      </>
+                    )}
+                  </Button>
+                  {plan.price_amount > 0 && !isCurrentPlan && (
+                    <Button
+                      onClick={() => openMomo(plan.slug)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Smartphone className="w-4 h-4 mr-2" />
+                      Mobile Money
+                    </Button>
                   )}
-                </Button>
+                </div>
               </motion.div>
             );
           })}
