@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard } from "lucide-react";
+import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard, Send, Bell, ShieldCheck, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
