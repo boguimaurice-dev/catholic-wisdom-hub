@@ -57,6 +57,8 @@ export default function Liturgy() {
     return Number.isFinite(s) && s >= 0 && s < FONT_SIZES.length ? s : 1;
   });
 
+  const [showTopButton, setShowTopButton] = useState(false);
+
   const dateStr = format(date, "yyyy-MM-dd");
 
   const load = useCallback(async (target: Date) => {
