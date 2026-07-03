@@ -37,11 +37,26 @@ serve(async (req) => {
     });
 
     const verifyData = await verifyRes.json();
-    if (!verifyRes.ok || !verifyData.status || verifyData.data.status !== "success") {
-      throw new Error("Payment not verified");
+    const txStatus = verifyData?.data?.status ?? "unknown";
+
+    // Return HTTP 200 with pending status so client can poll without a runtime error
+    if (!verifyRes.ok || !verifyData.status || txStatus !== "success") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          verified: false,
+          status: txStatus,
+          message:
+            txStatus === "pending" || txStatus === "ongoing"
+              ? "Payment pending — awaiting user authorization"
+              : `Payment not verified (status: ${txStatus})`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const { metadata } = verifyData.data;
+
 
     // Check if subscription already exists for this reference
     const { data: existing } = await supabase
