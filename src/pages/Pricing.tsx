@@ -39,49 +39,72 @@ const planColors: Record<string, string> = {
 export default function Pricing() {
   const { plans, currentPlan, subscription, loading, refresh } = useSubscription();
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
+  const [momoOpen, setMomoOpen] = useState(false);
+  const [momoPlanSlug, setMomoPlanSlug] = useState<string | null>(null);
+  const [momoPhone, setMomoPhone] = useState("");
+  const [momoProvider, setMomoProvider] = useState<"orange" | "mtn" | "moov" | "">("");
+  const [momoLoading, setMomoLoading] = useState(false);
+  const [momoStatus, setMomoStatus] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
 
   useEffect(() => {
     const reference = searchParams.get("reference");
-    if (reference) {
-      verifyPayment(reference);
-    }
+    if (reference) verifyPayment(reference);
   }, [searchParams]);
+
+  useEffect(() => {
+    const guessed = detectProvider(momoPhone);
+    if (guessed) setMomoProvider(guessed);
+  }, [momoPhone]);
 
   const verifyPayment = async (reference: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
-        body: { reference },
-      });
-
+      const { data, error } = await supabase.functions.invoke("paystack-verify", { body: { reference } });
       if (error) throw error;
       if (data?.success) {
         toast.success(t("plans.currentPlan"));
         await refresh();
         navigate("/pricing", { replace: true });
       }
-    } catch (err) {
+    } catch {
       toast.error(t("common.error"));
+    }
+  };
+
+  const handleSyncSubscriptions = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-sync-subscription", { body: {} });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(
+          data.subscriptions_added > 0
+            ? `${data.subscriptions_added} abonnement(s) mis à jour`
+            : "Vos abonnements sont à jour"
+        );
+        await refresh();
+      } else {
+        throw new Error(data?.error || "Erreur");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSyncing(false);
     }
   };
 
   const handleSubscribe = async (planSlug: string) => {
     if (planSlug === "basique") return;
     setProcessingPlan(planSlug);
-
     try {
       const { data, error } = await supabase.functions.invoke("paystack-initialize", {
-        body: {
-          planSlug,
-          callbackUrl: `${window.location.origin}/pricing`,
-        },
+        body: { planSlug, callbackUrl: `${window.location.origin}/pricing` },
       });
-
       if (error) throw error;
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
@@ -89,10 +112,59 @@ export default function Pricing() {
         throw new Error(data?.error || t("common.error"));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : t("common.error");
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setProcessingPlan(null);
+    }
+  };
+
+  const openMomo = (planSlug: string) => {
+    setMomoPlanSlug(planSlug);
+    setMomoPhone("");
+    setMomoProvider("");
+    setMomoStatus(null);
+    setMomoOpen(true);
+  };
+
+  const submitMomo = async () => {
+    if (!momoPlanSlug) return;
+    if (momoPhone.replace(/\D/g, "").length < 8) return toast.error("Numéro invalide");
+    const provider = momoProvider || detectProvider(momoPhone);
+    if (!provider) return toast.error("Choisissez votre opérateur");
+
+    setMomoLoading(true);
+    setMomoStatus("Envoi de la notification à votre opérateur…");
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-charge-momo", {
+        body: { planSlug: momoPlanSlug, phone: momoPhone, provider },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Échec");
+      setMomoStatus(
+        data.display_text ||
+          `Notification envoyée à ${provider.toUpperCase()}. Autorisez le paiement sur votre téléphone.`
+      );
+      toast.success("Vérifiez votre téléphone pour autoriser le paiement");
+      const ref = data.reference;
+      if (ref) {
+        for (let i = 0; i < 12; i++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          const { data: v } = await supabase.functions.invoke("paystack-verify", { body: { reference: ref } });
+          if (v?.success) {
+            toast.success("Paiement confirmé !");
+            setMomoOpen(false);
+            await refresh();
+            return;
+          }
+        }
+        setMomoStatus("En attente de confirmation. Utilisez « Actualiser » plus tard.");
+      }
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "Erreur";
+      toast.error(m);
+      setMomoStatus(m);
+    } finally {
+      setMomoLoading(false);
     }
   };
 
