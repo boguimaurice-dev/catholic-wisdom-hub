@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ArrowLeft, BookOpen, Loader2, CalendarIcon, Sparkles, VolumeX, AudioLines,
-  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText,
+  ChevronLeft, ChevronRight, WifiOff, Type, Share2, Download, FileText, ArrowUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -56,6 +56,8 @@ export default function Liturgy() {
     const s = Number(localStorage.getItem("liturgy-font-idx"));
     return Number.isFinite(s) && s >= 0 && s < FONT_SIZES.length ? s : 1;
   });
+
+  const [showTopButton, setShowTopButton] = useState(false);
 
   const dateStr = format(date, "yyyy-MM-dd");
 
@@ -232,6 +234,16 @@ export default function Liturgy() {
   }, []);
 
   useEffect(() => { localStorage.setItem("liturgy-font-idx", String(fontIdx)); }, [fontIdx]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      setShowTopButton(scrollHeight > 0 && scrollTop / scrollHeight > 0.8);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const labelFor = (type: string) => {
     const map: Record<string, string> = {
@@ -493,6 +505,22 @@ export default function Liturgy() {
             )}
           </>
         )}
+        <AnimatePresence>
+          {showTopButton && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="fixed bottom-6 right-4 z-50 flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-transform"
+              aria-label="Retourner en haut de la page"
+            >
+              <ArrowUp className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">Liturgie du jour</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
