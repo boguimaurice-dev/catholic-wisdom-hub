@@ -505,6 +505,22 @@ export default function Liturgy() {
             )}
           </>
         )}
+        <AnimatePresence>
+          {showTopButton && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="fixed bottom-6 right-4 z-50 flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-transform"
+              aria-label="Retourner en haut de la page"
+            >
+              <ArrowUp className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">Liturgie du jour</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
