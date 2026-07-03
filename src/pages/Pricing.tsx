@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react";
+import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -9,6 +13,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+function detectProvider(phone: string): "orange" | "mtn" | "moov" | null {
+  const d = phone.replace(/\D/g, "");
+  const local = d.startsWith("225") ? d.slice(3) : d;
+  const p = local.slice(0, 2);
+  if (["07", "08", "09"].includes(p)) return "orange";
+  if (["05", "04", "06"].includes(p)) return "mtn";
+  if (["01", "02", "03"].includes(p)) return "moov";
+  return null;
+}
 
 const planIcons: Record<string, React.ReactNode> = {
   basique: <Zap className="w-6 h-6" />,
@@ -25,49 +39,72 @@ const planColors: Record<string, string> = {
 export default function Pricing() {
   const { plans, currentPlan, subscription, loading, refresh } = useSubscription();
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
+  const [momoOpen, setMomoOpen] = useState(false);
+  const [momoPlanSlug, setMomoPlanSlug] = useState<string | null>(null);
+  const [momoPhone, setMomoPhone] = useState("");
+  const [momoProvider, setMomoProvider] = useState<"orange" | "mtn" | "moov" | "">("");
+  const [momoLoading, setMomoLoading] = useState(false);
+  const [momoStatus, setMomoStatus] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
 
   useEffect(() => {
     const reference = searchParams.get("reference");
-    if (reference) {
-      verifyPayment(reference);
-    }
+    if (reference) verifyPayment(reference);
   }, [searchParams]);
+
+  useEffect(() => {
+    const guessed = detectProvider(momoPhone);
+    if (guessed) setMomoProvider(guessed);
+  }, [momoPhone]);
 
   const verifyPayment = async (reference: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
-        body: { reference },
-      });
-
+      const { data, error } = await supabase.functions.invoke("paystack-verify", { body: { reference } });
       if (error) throw error;
       if (data?.success) {
         toast.success(t("plans.currentPlan"));
         await refresh();
         navigate("/pricing", { replace: true });
       }
-    } catch (err) {
+    } catch {
       toast.error(t("common.error"));
+    }
+  };
+
+  const handleSyncSubscriptions = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-sync-subscription", { body: {} });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(
+          data.subscriptions_added > 0
+            ? `${data.subscriptions_added} abonnement(s) mis à jour`
+            : "Vos abonnements sont à jour"
+        );
+        await refresh();
+      } else {
+        throw new Error(data?.error || "Erreur");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSyncing(false);
     }
   };
 
   const handleSubscribe = async (planSlug: string) => {
     if (planSlug === "basique") return;
     setProcessingPlan(planSlug);
-
     try {
       const { data, error } = await supabase.functions.invoke("paystack-initialize", {
-        body: {
-          planSlug,
-          callbackUrl: `${window.location.origin}/pricing`,
-        },
+        body: { planSlug, callbackUrl: `${window.location.origin}/pricing` },
       });
-
       if (error) throw error;
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
@@ -75,10 +112,59 @@ export default function Pricing() {
         throw new Error(data?.error || t("common.error"));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : t("common.error");
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setProcessingPlan(null);
+    }
+  };
+
+  const openMomo = (planSlug: string) => {
+    setMomoPlanSlug(planSlug);
+    setMomoPhone("");
+    setMomoProvider("");
+    setMomoStatus(null);
+    setMomoOpen(true);
+  };
+
+  const submitMomo = async () => {
+    if (!momoPlanSlug) return;
+    if (momoPhone.replace(/\D/g, "").length < 8) return toast.error("Numéro invalide");
+    const provider = momoProvider || detectProvider(momoPhone);
+    if (!provider) return toast.error("Choisissez votre opérateur");
+
+    setMomoLoading(true);
+    setMomoStatus("Envoi de la notification à votre opérateur…");
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-charge-momo", {
+        body: { planSlug: momoPlanSlug, phone: momoPhone, provider },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Échec");
+      setMomoStatus(
+        data.display_text ||
+          `Notification envoyée à ${provider.toUpperCase()}. Autorisez le paiement sur votre téléphone.`
+      );
+      toast.success("Vérifiez votre téléphone pour autoriser le paiement");
+      const ref = data.reference;
+      if (ref) {
+        for (let i = 0; i < 12; i++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          const { data: v } = await supabase.functions.invoke("paystack-verify", { body: { reference: ref } });
+          if (v?.success) {
+            toast.success("Paiement confirmé !");
+            setMomoOpen(false);
+            await refresh();
+            return;
+          }
+        }
+        setMomoStatus("En attente de confirmation. Utilisez « Actualiser » plus tard.");
+      }
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "Erreur";
+      toast.error(m);
+      setMomoStatus(m);
+    } finally {
+      setMomoLoading(false);
     }
   };
 
@@ -103,6 +189,17 @@ export default function Pricing() {
             <h1 className="font-serif text-lg sm:text-2xl font-bold">{t("plans.choosePlan")}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={handleSyncSubscriptions}
+              disabled={syncing}
+              variant="ghost"
+              size="sm"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+              title="Actualiser mes abonnements depuis Paystack"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline ml-1">Actualiser</span>
+            </Button>
             <Link to="/donation">
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Heart className="w-4 h-4" />
@@ -175,22 +272,37 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Button
-                  onClick={() => handleSubscribe(plan.slug)}
-                  disabled={isCurrentPlan || processingPlan === plan.slug}
-                  variant={isPopular ? "default" : "outline"}
-                  className={`w-full ${isPopular ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : ""}`}
-                >
-                  {processingPlan === plan.slug ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isCurrentPlan ? (
-                    t("plans.currentPlan")
-                  ) : plan.price_amount === 0 ? (
-                    t("plans.currentPlan")
-                  ) : (
-                    t("plans.subscribe")
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => handleSubscribe(plan.slug)}
+                    disabled={isCurrentPlan || processingPlan === plan.slug}
+                    variant={isPopular ? "default" : "outline"}
+                    className={`w-full ${isPopular ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : ""}`}
+                  >
+                    {processingPlan === plan.slug ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isCurrentPlan ? (
+                      t("plans.currentPlan")
+                    ) : plan.price_amount === 0 ? (
+                      t("plans.currentPlan")
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Carte bancaire
+                      </>
+                    )}
+                  </Button>
+                  {plan.price_amount > 0 && !isCurrentPlan && (
+                    <Button
+                      onClick={() => openMomo(plan.slug)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Smartphone className="w-4 h-4 mr-2" />
+                      Mobile Money
+                    </Button>
                   )}
-                </Button>
+                </div>
               </motion.div>
             );
           })}
@@ -219,6 +331,78 @@ export default function Pricing() {
           </p>
         </div>
       </main>
+
+      <Dialog open={momoOpen} onOpenChange={(o) => !momoLoading && setMomoOpen(o)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5" />
+              Paiement Mobile Money
+            </DialogTitle>
+            <DialogDescription>
+              Entrez votre numéro. Votre opérateur vous enverra une notification pour
+              autoriser le débit.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="momo-phone">Numéro de téléphone</Label>
+              <Input
+                id="momo-phone"
+                type="tel"
+                placeholder="07 XX XX XX XX"
+                value={momoPhone}
+                onChange={(e) => setMomoPhone(e.target.value)}
+                disabled={momoLoading}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <Label>Opérateur</Label>
+              <RadioGroup
+                value={momoProvider}
+                onValueChange={(v) => setMomoProvider(v as any)}
+                className="grid grid-cols-3 gap-2 mt-2"
+                disabled={momoLoading}
+              >
+                {[
+                  { v: "orange", label: "Orange" },
+                  { v: "mtn", label: "MTN" },
+                  { v: "moov", label: "Moov" },
+                ].map((o) => (
+                  <label
+                    key={o.v}
+                    className={`flex items-center justify-center gap-2 rounded-md border p-2 cursor-pointer text-sm ${
+                      momoProvider === o.v ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <RadioGroupItem value={o.v} />
+                    {o.label}
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {momoStatus && (
+              <div className="text-sm bg-muted/50 border border-border rounded-md p-3">
+                {momoLoading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
+                {momoStatus}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMomoOpen(false)} disabled={momoLoading}>
+              Annuler
+            </Button>
+            <Button onClick={submitMomo} disabled={momoLoading || !momoPhone}>
+              {momoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Payer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
