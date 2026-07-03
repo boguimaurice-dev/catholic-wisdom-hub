@@ -126,6 +126,8 @@ export default function Pricing() {
     setMomoPhone("");
     setMomoProvider("");
     setMomoStatus(null);
+    setMomoStep("idle");
+    setMomoErrorMsg(null);
     setMomoOpen(true);
   };
 
@@ -136,13 +138,16 @@ export default function Pricing() {
     if (!provider) return toast.error("Choisissez votre opérateur");
 
     setMomoLoading(true);
-    setMomoStatus("Envoi de la notification à votre opérateur…");
+    setMomoErrorMsg(null);
+    setMomoStep("requesting");
+    setMomoStatus("Envoi de la demande à Paystack…");
     try {
       const { data, error } = await supabase.functions.invoke("paystack-charge-momo", {
         body: { planSlug: momoPlanSlug, phone: momoPhone, provider },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Échec");
+      setMomoStep("notified");
       setMomoStatus(
         data.display_text ||
           `Notification envoyée à ${provider.toUpperCase()}. Autorisez le paiement sur votre téléphone.`
@@ -150,13 +155,16 @@ export default function Pricing() {
       toast.success("Vérifiez votre téléphone pour autoriser le paiement");
       const ref = data.reference;
       if (ref) {
+        setMomoStep("awaiting");
         for (let i = 0; i < 12; i++) {
           await new Promise((r) => setTimeout(r, 5000));
           const { data: v } = await supabase.functions.invoke("paystack-verify", { body: { reference: ref } });
           if (v?.success) {
+            setMomoStep("confirmed");
+            setMomoStatus("Paiement confirmé !");
             toast.success("Paiement confirmé !");
-            setMomoOpen(false);
             await refresh();
+            setTimeout(() => setMomoOpen(false), 1500);
             return;
           }
         }
@@ -165,6 +173,8 @@ export default function Pricing() {
     } catch (err) {
       const m = err instanceof Error ? err.message : "Erreur";
       toast.error(m);
+      setMomoStep("failed");
+      setMomoErrorMsg(m);
       setMomoStatus(m);
     } finally {
       setMomoLoading(false);
