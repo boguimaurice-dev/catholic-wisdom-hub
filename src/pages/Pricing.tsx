@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react";
+import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -9,6 +13,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+function detectProvider(phone: string): "orange" | "mtn" | "moov" | null {
+  const d = phone.replace(/\D/g, "");
+  const local = d.startsWith("225") ? d.slice(3) : d;
+  const p = local.slice(0, 2);
+  if (["07", "08", "09"].includes(p)) return "orange";
+  if (["05", "04", "06"].includes(p)) return "mtn";
+  if (["01", "02", "03"].includes(p)) return "moov";
+  return null;
+}
 
 const planIcons: Record<string, React.ReactNode> = {
   basique: <Zap className="w-6 h-6" />,
