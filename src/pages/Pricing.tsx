@@ -45,6 +45,9 @@ export default function Pricing() {
   const [momoProvider, setMomoProvider] = useState<"orange" | "mtn" | "moov" | "">("");
   const [momoLoading, setMomoLoading] = useState(false);
   const [momoStatus, setMomoStatus] = useState<string | null>(null);
+  type MomoStep = "idle" | "requesting" | "notified" | "awaiting" | "confirmed" | "failed";
+  const [momoStep, setMomoStep] = useState<MomoStep>("idle");
+  const [momoErrorMsg, setMomoErrorMsg] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
