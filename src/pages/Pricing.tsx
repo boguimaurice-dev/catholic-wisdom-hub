@@ -331,6 +331,78 @@ export default function Pricing() {
           </p>
         </div>
       </main>
+
+      <Dialog open={momoOpen} onOpenChange={(o) => !momoLoading && setMomoOpen(o)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5" />
+              Paiement Mobile Money
+            </DialogTitle>
+            <DialogDescription>
+              Entrez votre numéro. Votre opérateur vous enverra une notification pour
+              autoriser le débit.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="momo-phone">Numéro de téléphone</Label>
+              <Input
+                id="momo-phone"
+                type="tel"
+                placeholder="07 XX XX XX XX"
+                value={momoPhone}
+                onChange={(e) => setMomoPhone(e.target.value)}
+                disabled={momoLoading}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <Label>Opérateur</Label>
+              <RadioGroup
+                value={momoProvider}
+                onValueChange={(v) => setMomoProvider(v as any)}
+                className="grid grid-cols-3 gap-2 mt-2"
+                disabled={momoLoading}
+              >
+                {[
+                  { v: "orange", label: "Orange" },
+                  { v: "mtn", label: "MTN" },
+                  { v: "moov", label: "Moov" },
+                ].map((o) => (
+                  <label
+                    key={o.v}
+                    className={`flex items-center justify-center gap-2 rounded-md border p-2 cursor-pointer text-sm ${
+                      momoProvider === o.v ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <RadioGroupItem value={o.v} />
+                    {o.label}
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {momoStatus && (
+              <div className="text-sm bg-muted/50 border border-border rounded-md p-3">
+                {momoLoading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
+                {momoStatus}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMomoOpen(false)} disabled={momoLoading}>
+              Annuler
+            </Button>
+            <Button onClick={submitMomo} disabled={momoLoading || !momoPhone}>
+              {momoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Payer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
