@@ -1,14 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles, Globe } from "lucide-react";
+import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles, Globe, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, type Language } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+function MonasteryLink({ text }: { text: string }) {
+  const { language } = useLanguage();
+  const monasteryNames: Record<Language, string> = {
+    fr: "Monastère Sainte Marie de Bouaké",
+    en: "Monastery of Saint Mary of Bouaké",
+    es: "Monasterio Santa María de Bouaké",
+    pt: "Mosteiro Santa Maria de Bouaké",
+  };
+  const name = monasteryNames[language];
+  const parts = text.split(name);
+  if (parts.length < 2) return <>{text}</>;
+  return (
+    <>
+      {parts[0]}
+      <a
+        href="https://benedictinsbouake.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline text-primary hover:text-primary/80 inline-flex items-center gap-0.5"
+      >
+        {name}
+        <ExternalLink className="w-3 h-3 inline-block ml-0.5" />
+      </a>
+      {parts[1]}
+    </>
+  );
+}
 
 type Currency = "XOF" | "USD";
 
