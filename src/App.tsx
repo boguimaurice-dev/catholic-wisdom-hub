@@ -18,6 +18,7 @@ const History = lazy(() => import("./pages/History"));
 const Donation = lazy(() => import("./pages/Donation"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/donation" element={<ProtectedRoute><Donation /></ProtectedRoute>} />
             <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
             <Route path="/liturgy" element={<Liturgy />} />
+            <Route path="/superadmin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
