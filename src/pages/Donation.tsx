@@ -180,7 +180,7 @@ export default function Donation() {
                 transition={{ delay: 0.5 }}
                 className="text-muted-foreground mb-8 max-w-md mx-auto"
               >
-                {t("donation.thankYouDesc")}
+                <MonasteryLink text={t("donation.thankYouDesc")} />
               </motion.p>
 
               <motion.div
@@ -233,7 +233,7 @@ export default function Donation() {
                 </h2>
                 <div className="ornament" />
                 <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  {t("donation.description")}
+                  <MonasteryLink text={t("donation.description")} />
                 </p>
               </motion.div>
 
