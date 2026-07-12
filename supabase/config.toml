@@ -3,5 +3,8 @@ project_id = "xfbjowupnffoykyhaqoz"
 [functions.paystack-webhook]
 verify_jwt = false
 
+[functions.paystack-mode-check]
+verify_jwt = false
+
 [functions.liturgy-meditation]
 verify_jwt = false
