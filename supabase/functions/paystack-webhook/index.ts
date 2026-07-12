@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts";
+import { createHmac } from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +23,7 @@ serve(async (req) => {
     if (!signature) {
       return new Response("Missing signature", { status: 401 });
     }
-    const hash = createHmac("sha512", PAYSTACK_SECRET_KEY).update(body).toString();
+    const hash = createHmac("sha512", PAYSTACK_SECRET_KEY).update(body).digest("hex");
     if (hash !== signature) {
       return new Response("Invalid signature", { status: 401 });
     }
