@@ -277,7 +277,7 @@ export default function Index() {
                   >
                     {message.role === "user" ? (
                       <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base sm:text-lg leading-relaxed">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
                       <div className="relative group">
