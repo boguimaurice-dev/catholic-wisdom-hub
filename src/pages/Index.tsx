@@ -238,12 +238,27 @@ export default function Index() {
         </div>
       </header>
 
+      {/* Level selector bar */}
+      <div className="bg-background/80 backdrop-blur-sm border-b border-border py-2 px-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="hidden sm:inline">Niveau de la réponse :</span>
+            <span className="sm:hidden font-medium">Niveau :</span>
+            <span className="text-foreground/80 italic hidden md:inline">
+              {LEVELS.find((l) => l.key === level)?.description}
+            </span>
+          </div>
+          <LevelSelector level={level} onChange={setLevel} />
+        </div>
+      </div>
+
       {/* Agents Grid */}
       <div className="bg-cream border-b border-border py-3 px-4">
         <div className="max-w-6xl mx-auto">
           <AgentsGrid activeExperts={activeExperts} consultedExperts={consultedExperts} />
         </div>
       </div>
+
 
       {/* Chat Area */}
       <main className="flex-1 overflow-y-auto pb-36">
