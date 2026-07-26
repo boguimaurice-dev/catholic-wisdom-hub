@@ -34,7 +34,15 @@ export default function Index() {
   const [activeExperts, setActiveExperts] = useState<string[]>([]);
   const [consultedExperts, setConsultedExperts] = useState<string[]>([]);
   const [currentPhase, setCurrentPhase] = useState<string>("");
+  const [level, setLevel] = useState<ConsultationLevel>(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("consultation_level") : null;
+    return (saved as ConsultationLevel) || "grand_public";
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem("consultation_level", level);
+  }, [level]);
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
