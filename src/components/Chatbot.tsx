@@ -125,7 +125,7 @@ export function Chatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-4 z-50 w-[340px] sm:w-[380px] h-[480px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-4 z-50 w-[360px] sm:w-[420px] h-[520px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
@@ -147,16 +147,16 @@ export function Chatbot() {
                 </div>
               )}
               {messages.map((msg, i) => (
-                <div key={i} className={`${msg.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[90%]"}`}>
+                <div key={i} className={`${msg.role === "user" ? "ml-auto max-w-[85%]" : "max-w-[95%]"}`}>
                   <div
-                    className={`text-sm rounded-xl px-3 py-2 ${
+                    className={`text-base leading-relaxed rounded-xl px-3.5 py-2.5 ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-muted text-foreground rounded-bl-sm"
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none">
+                      <div className="prose prose-base max-w-none leading-relaxed prose-p:leading-relaxed">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     ) : (
@@ -182,7 +182,7 @@ export function Chatbot() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
                   placeholder={t("chatbot.placeholder")}
-                  className="flex-1 text-sm bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex-1 text-base leading-relaxed bg-background border border-input rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-ring"
                   disabled={isLoading}
                 />
                 <Button size="icon" onClick={send} disabled={isLoading || !input.trim()} className="h-9 w-9 shrink-0">

@@ -79,11 +79,23 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Crimson Text', Georgia, serif;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', serif;
+    line-height: 1.25;
   }
+}
+
+/* Improve dark-mode contrast on night-blue backgrounds */
+.dark {
+  --foreground: 40 35% 96%;
+  --card-foreground: 40 35% 96%;
+  --muted-foreground: 40 22% 78%;
 }
 
 @layer utilities {

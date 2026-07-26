@@ -15,6 +15,8 @@ import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { useFontSize } from "@/hooks/useFontSize";
+import { Type } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,6 +37,7 @@ export default function Index() {
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
+  const { scale, increase, decrease, reset } = useFontSize();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,10 +165,10 @@ export default function Index() {
                 <Cross className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
+                <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-wide">
                   {t("header.title")}
                 </h1>
-                <p className="text-xs opacity-80 hidden sm:block font-light">
+                <p className="text-xs sm:text-sm opacity-80 hidden sm:block font-light">
                   {t("header.subtitle")}
                 </p>
               </div>
@@ -210,6 +213,11 @@ export default function Index() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
+              <div className="hidden md:flex items-center rounded-full border border-primary-foreground/20 bg-primary-foreground/5 overflow-hidden" role="group" aria-label="Taille du texte">
+                <button type="button" onClick={decrease} className="px-2 py-1 text-xs hover:bg-primary-foreground/10 transition" aria-label="Diminuer la taille du texte">A-</button>
+                <button type="button" onClick={reset} className="px-2 py-1 text-xs border-x border-primary-foreground/20 hover:bg-primary-foreground/10 transition" aria-label="Réinitialiser la taille du texte" title={`${Math.round(scale*100)}%`}><Type className="w-3.5 h-3.5" /></button>
+                <button type="button" onClick={increase} className="px-2 py-1 text-sm font-semibold hover:bg-primary-foreground/10 transition" aria-label="Augmenter la taille du texte">A+</button>
+              </div>
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
@@ -269,7 +277,7 @@ export default function Index() {
                   >
                     {message.role === "user" ? (
                       <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base sm:text-lg leading-relaxed">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
                       <div className="relative group">
@@ -290,7 +298,7 @@ export default function Index() {
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base sm:text-lg leading-relaxed">{message.content}</p>
                          <Button
                            variant="outline"
                            size="sm"
@@ -345,7 +353,7 @@ export default function Index() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
-              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
+              className="flex-1 min-h-[56px] max-h-40 resize-none text-base sm:text-lg leading-relaxed bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
