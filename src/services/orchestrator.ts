@@ -3,9 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catholic-orchestrator`;
 
+export type ConsultationLevel = "grand_public" | "catechiste" | "universitaire";
+
 export async function consultOrchestrator(
   question: string,
-  conversationHistory: Message[] = []
+  conversationHistory: Message[] = [],
+  level: ConsultationLevel = "grand_public"
 ): Promise<ConsultationResult> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -18,6 +21,7 @@ export async function consultOrchestrator(
     },
     body: JSON.stringify({
       question,
+      level,
       conversationHistory: conversationHistory.map((m) => ({
         role: m.role,
         content: m.content,
