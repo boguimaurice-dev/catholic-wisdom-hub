@@ -213,6 +213,11 @@ export default function Index() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
+              <div className="hidden md:flex items-center rounded-full border border-primary-foreground/20 bg-primary-foreground/5 overflow-hidden" role="group" aria-label="Taille du texte">
+                <button type="button" onClick={decrease} className="px-2 py-1 text-xs hover:bg-primary-foreground/10 transition" aria-label="Diminuer la taille du texte">A-</button>
+                <button type="button" onClick={reset} className="px-2 py-1 text-xs border-x border-primary-foreground/20 hover:bg-primary-foreground/10 transition" aria-label="Réinitialiser la taille du texte" title={`${Math.round(scale*100)}%`}><Type className="w-3.5 h-3.5" /></button>
+                <button type="button" onClick={increase} className="px-2 py-1 text-sm font-semibold hover:bg-primary-foreground/10 transition" aria-label="Augmenter la taille du texte">A+</button>
+              </div>
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
