@@ -15,6 +15,8 @@ import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { useFontSize } from "@/hooks/useFontSize";
+import { Type } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
