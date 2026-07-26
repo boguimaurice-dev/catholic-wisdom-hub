@@ -21,6 +21,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
+import { LevelSelector, LEVELS } from "@/components/LevelSelector";
+import type { ConsultationLevel } from "@/services/orchestrator";
 
 
 export default function Index() {
