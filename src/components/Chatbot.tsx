@@ -182,7 +182,7 @@ export function Chatbot() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
                   placeholder={t("chatbot.placeholder")}
-                  className="flex-1 text-sm bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex-1 text-base leading-relaxed bg-background border border-input rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-ring"
                   disabled={isLoading}
                 />
                 <Button size="icon" onClick={send} disabled={isLoading || !input.trim()} className="h-9 w-9 shrink-0">
