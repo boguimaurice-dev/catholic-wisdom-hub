@@ -165,10 +165,10 @@ export default function Index() {
                 <Cross className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
+                <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-wide">
                   {t("header.title")}
                 </h1>
-                <p className="text-xs opacity-80 hidden sm:block font-light">
+                <p className="text-xs sm:text-sm opacity-80 hidden sm:block font-light">
                   {t("header.subtitle")}
                 </p>
               </div>
