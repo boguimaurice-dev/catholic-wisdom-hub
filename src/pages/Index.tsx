@@ -298,7 +298,7 @@ export default function Index() {
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base sm:text-lg leading-relaxed">{message.content}</p>
                          <Button
                            variant="outline"
                            size="sm"
