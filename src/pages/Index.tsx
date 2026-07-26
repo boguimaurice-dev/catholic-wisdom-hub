@@ -21,6 +21,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
+import { LevelSelector, LEVELS } from "@/components/LevelSelector";
+import type { ConsultationLevel } from "@/services/orchestrator";
 
 
 export default function Index() {
@@ -32,7 +34,15 @@ export default function Index() {
   const [activeExperts, setActiveExperts] = useState<string[]>([]);
   const [consultedExperts, setConsultedExperts] = useState<string[]>([]);
   const [currentPhase, setCurrentPhase] = useState<string>("");
+  const [level, setLevel] = useState<ConsultationLevel>(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("consultation_level") : null;
+    return (saved as ConsultationLevel) || "grand_public";
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem("consultation_level", level);
+  }, [level]);
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
@@ -79,7 +89,7 @@ export default function Index() {
       setCurrentPhase(t("index.analyzePhase"));
       setTimeout(() => setCurrentPhase(t("index.selectPhase")), 1000);
 
-      const result = await consultOrchestrator(question, messages);
+      const result = await consultOrchestrator(question, messages, level);
 
       if (result.success) {
         const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
@@ -228,12 +238,27 @@ export default function Index() {
         </div>
       </header>
 
+      {/* Level selector bar */}
+      <div className="bg-background/80 backdrop-blur-sm border-b border-border py-2 px-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="hidden sm:inline">Niveau de la réponse :</span>
+            <span className="sm:hidden font-medium">Niveau :</span>
+            <span className="text-foreground/80 italic hidden md:inline">
+              {LEVELS.find((l) => l.key === level)?.description}
+            </span>
+          </div>
+          <LevelSelector level={level} onChange={setLevel} />
+        </div>
+      </div>
+
       {/* Agents Grid */}
       <div className="bg-cream border-b border-border py-3 px-4">
         <div className="max-w-6xl mx-auto">
           <AgentsGrid activeExperts={activeExperts} consultedExperts={consultedExperts} />
         </div>
       </div>
+
 
       {/* Chat Area */}
       <main className="flex-1 overflow-y-auto pb-36">
