@@ -353,7 +353,7 @@ export default function Index() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
-              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
+              className="flex-1 min-h-[56px] max-h-40 resize-none text-base sm:text-lg leading-relaxed bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
