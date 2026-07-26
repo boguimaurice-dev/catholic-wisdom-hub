@@ -213,7 +213,7 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
                       </p>
                     </div>
                   </div>
-                  <div className="prose prose-sm max-w-none text-foreground/90">
+                  <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
                     <ReactMarkdown>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>
