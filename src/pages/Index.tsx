@@ -37,6 +37,7 @@ export default function Index() {
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
+  const { scale, increase, decrease, reset } = useFontSize();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
