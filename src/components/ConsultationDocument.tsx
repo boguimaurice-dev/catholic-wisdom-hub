@@ -165,7 +165,7 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
 
       {/* Synthèse */}
       <div className="p-4 sm:p-6">
-        <div className="prose prose-sm sm:prose max-w-none prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-strong:text-primary">
+        <div className="prose prose-base sm:prose-lg max-w-none leading-relaxed prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-p:leading-relaxed prose-strong:text-primary prose-li:leading-relaxed">
           <ReactMarkdown>{result.synthesis}</ReactMarkdown>
         </div>
       </div>
