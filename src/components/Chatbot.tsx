@@ -147,16 +147,16 @@ export function Chatbot() {
                 </div>
               )}
               {messages.map((msg, i) => (
-                <div key={i} className={`${msg.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[90%]"}`}>
+                <div key={i} className={`${msg.role === "user" ? "ml-auto max-w-[85%]" : "max-w-[95%]"}`}>
                   <div
-                    className={`text-sm rounded-xl px-3 py-2 ${
+                    className={`text-base leading-relaxed rounded-xl px-3.5 py-2.5 ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-muted text-foreground rounded-bl-sm"
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none">
+                      <div className="prose prose-base max-w-none leading-relaxed prose-p:leading-relaxed">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     ) : (
