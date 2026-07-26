@@ -324,6 +324,8 @@ Question: ${question}`;
     // Phase 3: Synthèse par l'Orchestrateur
     const synthesePrompt = `Tu es l'orchestreur assistant en chef. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
 
+${levelInstruction}
+
 QUESTION POSÉE: ${question}
 
 CONTRIBUTIONS DES EXPERTS:
@@ -336,8 +338,9 @@ Crée une réponse unifiée et bien structurée qui:
 1. Intègre harmonieusement les perspectives de chaque expert
 2. Évite les répétitions tout en préservant les nuances importantes
 3. Utilise des titres et sous-titres clairs (en markdown)
-4. Cite les sources pertinentes (Catéchisme, Écritures, documents)
+4. Cite les sources pertinentes (Catéchisme, Écritures, documents) selon le niveau demandé
 5. Conclut de manière édifiante
+6. RESPECTE STRICTEMENT le niveau de langue demandé ci-dessus
 
 Format ta réponse en markdown avec une belle mise en page.`;
 
