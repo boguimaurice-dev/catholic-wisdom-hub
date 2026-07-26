@@ -306,7 +306,7 @@ Question: ${question}`;
       if (!expert) return null;
 
       const expertResponse = await callLovableAI([
-        { role: "system", content: expert.systemPrompt },
+        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}` },
         ...contextMessages,
         { role: "user", content: question }
       ], "google/gemini-3-flash-preview");
