@@ -1,35 +1,117 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
-import { ConsultationResult, EXPERTS_CONFIG } from "@/types/consultation";
+import { ConsultationResult, EXPERTS_CONFIG, Source, SourceType } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, FileText, Code, FileType, Check, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
+  BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
+} from "lucide-react";
 import { toast } from "sonner";
+import { parseSources } from "@/lib/parseSources";
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
   question: string;
 }
 
+const SOURCE_META: Record<SourceType, { label: string; icon: typeof BookOpen; className: string }> = {
+  bible:       { label: "Écriture Sainte",  icon: BookOpen,   className: "bg-red-50 border-red-300 text-red-900 dark:bg-red-950/40 dark:text-red-100 dark:border-red-800" },
+  catechisme:  { label: "Catéchisme",       icon: BookMarked, className: "bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-800" },
+  concile:     { label: "Concile",          icon: Landmark,   className: "bg-blue-50 border-blue-300 text-blue-900 dark:bg-blue-950/40 dark:text-blue-100 dark:border-blue-800" },
+  encyclique:  { label: "Encyclique",       icon: ScrollText, className: "bg-purple-50 border-purple-300 text-purple-900 dark:bg-purple-950/40 dark:text-purple-100 dark:border-purple-800" },
+  pere:        { label: "Père de l'Église", icon: Feather,    className: "bg-orange-50 border-orange-300 text-orange-900 dark:bg-orange-950/40 dark:text-orange-100 dark:border-orange-800" },
+  docteur:     { label: "Docteur",          icon: Feather,    className: "bg-indigo-50 border-indigo-300 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100 dark:border-indigo-800" },
+  liturgie:    { label: "Liturgie",         icon: Church,     className: "bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800" },
+  droit_canon: { label: "Droit canonique",  icon: Gavel,      className: "bg-slate-50 border-slate-300 text-slate-900 dark:bg-slate-900/40 dark:text-slate-100 dark:border-slate-700" },
+  histoire:    { label: "Histoire",         icon: Clock,      className: "bg-stone-50 border-stone-300 text-stone-900 dark:bg-stone-900/40 dark:text-stone-100 dark:border-stone-700" },
+  autre:       { label: "Source",           icon: LinkIcon,   className: "bg-muted border-border text-foreground" },
+};
+
+/** Walks React markdown children, splitting text nodes on [n] and injecting footnote links. */
+function withFootnoteLinks(children: ReactNode, valid: Set<number>): ReactNode {
+  if (children == null || typeof children === "boolean") return children;
+  if (typeof children === "number") return children;
+  if (typeof children === "string") {
+    if (!valid.size || !children.includes("[")) return children;
+    const parts: ReactNode[] = [];
+    const re = /\[(\d+)\]/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(children)) !== null) {
+      const n = Number(m[1]);
+      if (!valid.has(n)) continue;
+      if (m.index > last) parts.push(children.slice(last, m.index));
+      parts.push(
+        <sup key={`${m.index}-${n}`} className="mx-0.5">
+          <a
+            href={`#source-${n}`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(`source-${n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            className="text-primary font-semibold no-underline hover:underline"
+          >
+            [{n}]
+          </a>
+        </sup>
+      );
+      last = m.index + m[0].length;
+    }
+    if (!parts.length) return children;
+    if (last < children.length) parts.push(children.slice(last));
+    return parts;
+  }
+  if (Array.isArray(children)) return children.map((c, i) => <span key={i}>{withFootnoteLinks(c, valid)}</span>);
+  return children;
+}
+
+function makeFootnoteRenderers(valid: Set<number>) {
+  const wrap = (Tag: keyof JSX.IntrinsicElements) =>
+    ({ children, node, ...props }: { children?: ReactNode; node?: unknown }) => {
+      void node;
+      return <Tag {...props}>{withFootnoteLinks(children, valid)}</Tag>;
+    };
+  return {
+    p: wrap("p"), li: wrap("li"),
+    strong: wrap("strong"), em: wrap("em"),
+    h1: wrap("h1"), h2: wrap("h2"), h3: wrap("h3"), h4: wrap("h4"),
+    td: wrap("td"), blockquote: wrap("blockquote"),
+  };
+}
+
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const { body: synthesisBody, sources: parsedSources } = parseSources(result.synthesis || "");
+  const sources: Source[] = (result.sources && result.sources.length ? result.sources : parsedSources)
+    .slice()
+    .sort((a, b) => a.n - b.n);
+  const validNums = new Set(sources.map((s) => s.n));
+  const renderers = makeFootnoteRenderers(validNums);
+
+  const sourcesPlainText = () => {
+    if (!sources.length) return "";
+    let s = `\n\n${"=".repeat(50)}\nSOURCES\n${"=".repeat(50)}\n\n`;
+    sources.forEach((src) => {
+      s += `[${src.n}] ${src.title}${src.reference ? ` (${src.reference})` : ""}`;
+      if (src.url) s += ` — ${src.url}`;
+      s += "\n";
+    });
+    return s;
+  };
+
   const generatePlainText = () => {
-    let text = `CONSULTATION THÉOLOGIQUE\n`;
-    text += `${"=".repeat(50)}\n\n`;
+    let text = `CONSULTATION THÉOLOGIQUE\n${"=".repeat(50)}\n\n`;
     text += `Question: ${question}\n\n`;
     text += `Experts consultés: ${result.analysis.selectedExperts.map(e => e.name).join(", ")}\n`;
     text += `Raison: ${result.analysis.reason}\n\n`;
-    text += `${"=".repeat(50)}\n`;
-    text += `SYNTHÈSE\n`;
-    text += `${"=".repeat(50)}\n\n`;
-    text += result.synthesis;
-    
+    text += `${"=".repeat(50)}\nSYNTHÈSE\n${"=".repeat(50)}\n\n`;
+    text += synthesisBody;
+    text += sourcesPlainText();
     if (showExpertDetails) {
-      text += `\n\n${"=".repeat(50)}\n`;
-      text += `CONTRIBUTIONS DÉTAILLÉES\n`;
-      text += `${"=".repeat(50)}\n\n`;
+      text += `\n\n${"=".repeat(50)}\nCONTRIBUTIONS DÉTAILLÉES\n${"=".repeat(50)}\n\n`;
       result.expertContributions.forEach(contrib => {
         text += `\n--- ${contrib.name} (${contrib.title}) ---\n\n`;
         text += contrib.response + "\n";
@@ -39,49 +121,29 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
   };
 
   const generateHTML = () => {
+    const sourcesHTML = sources.length ? `
+  <h2>Sources</h2>
+  <ol>
+    ${sources.map(s => `<li id="source-${s.n}">${s.url ? `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>` : s.title}${s.reference ? ` <em>(${s.reference})</em>` : ""}</li>`).join("")}
+  </ol>` : "";
     return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consultation Théologique</title>
-  <style>
-    body { font-family: 'Crimson Text', Georgia, serif; max-width: 800px; margin: 0 auto; padding: 2rem; background: #FFF8DC; color: #3E2723; }
-    h1 { font-family: 'Cinzel', serif; color: #8B4513; border-bottom: 2px solid #DAA520; padding-bottom: 0.5rem; }
-    h2 { color: #8B4513; margin-top: 2rem; }
-    .question { background: #F5F5DC; padding: 1rem; border-left: 4px solid #8B4513; margin: 1rem 0; font-style: italic; }
-    .experts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
-    .expert-badge { background: #8B4513; color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.9rem; }
-    .synthesis { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .contribution { margin-top: 2rem; padding: 1rem; border: 1px solid #DAA520; border-radius: 0.5rem; }
-    .contribution-header { font-weight: bold; color: #8B4513; margin-bottom: 0.5rem; }
-  </style>
-</head>
-<body>
-  <h1>✝️ Consultation Théologique</h1>
-  <div class="question"><strong>Question:</strong> ${question}</div>
-  <div class="experts">
-    ${result.analysis.selectedExperts.map(e => `<span class="expert-badge">${e.icon || "📚"} ${e.name}</span>`).join("")}
-  </div>
-  <p><em>${result.analysis.reason}</em></p>
-  <h2>Synthèse</h2>
-  <div class="synthesis">${result.synthesis.replace(/\n/g, "<br>")}</div>
-  ${result.expertContributions.map(c => `
-  <div class="contribution">
-    <div class="contribution-header">${c.name} - ${c.title}</div>
-    <div>${c.response.replace(/\n/g, "<br>")}</div>
-  </div>`).join("")}
-</body>
-</html>`;
+<html lang="fr"><head><meta charset="UTF-8"><title>Consultation Théologique</title>
+<style>body{font-family:'Crimson Text',Georgia,serif;max-width:800px;margin:0 auto;padding:2rem;background:#FFF8DC;color:#3E2723}h1,h2{font-family:'Cinzel',serif;color:#8B4513}.question{background:#F5F5DC;padding:1rem;border-left:4px solid #8B4513;margin:1rem 0;font-style:italic}sup a{color:#8B4513;text-decoration:none;font-weight:600}.contribution{margin-top:2rem;padding:1rem;border:1px solid #DAA520;border-radius:.5rem}</style>
+</head><body>
+<h1>✝️ Consultation Théologique</h1>
+<div class="question"><strong>Question:</strong> ${question}</div>
+<h2>Synthèse</h2>
+<div>${synthesisBody.replace(/\n/g, "<br>")}</div>
+${sourcesHTML}
+${result.expertContributions.map(c => `<div class="contribution"><strong>${c.name} - ${c.title}</strong><div>${c.response.replace(/\n/g, "<br>")}</div></div>`).join("")}
+</body></html>`;
   };
 
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
+    a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
     toast.success(`Document téléchargé: ${filename}`);
   };
@@ -99,8 +161,7 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
       animate={{ opacity: 1, y: 0 }}
       className="bg-cream rounded-xl border-2 border-primary/30 overflow-hidden"
     >
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-3 sm:p-4">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="font-serif text-lg sm:text-xl font-bold flex items-center gap-2">
@@ -108,109 +169,110 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
             </h3>
             <p className="text-xs sm:text-sm opacity-90 mt-1">
               {result.analysis.selectedExperts.length} expert(s) consulté(s)
+              {sources.length ? ` · ${sources.length} source(s)` : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={copyToClipboard}
-              className="text-xs"
-            >
-              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-              Copier
+            <Button size="sm" variant="secondary" onClick={copyToClipboard} className="text-xs">
+              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}Copier
             </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => downloadFile(generatePlainText(), "consultation.txt", "text/plain")}
-              className="text-xs"
-            >
-              <FileText className="w-3 h-3 mr-1" />
-              TXT
+            <Button size="sm" variant="secondary" onClick={() => downloadFile(generatePlainText(), "consultation.txt", "text/plain")} className="text-xs">
+              <FileText className="w-3 h-3 mr-1" />TXT
             </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => downloadFile(generateHTML(), "consultation.html", "text/html")}
-              className="text-xs"
-            >
-              <Code className="w-3 h-3 mr-1" />
-              HTML
+            <Button size="sm" variant="secondary" onClick={() => downloadFile(generateHTML(), "consultation.html", "text/html")} className="text-xs">
+              <Code className="w-3 h-3 mr-1" />HTML
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Experts consultés */}
       <div className="p-3 sm:p-4 border-b border-primary/20 bg-primary/5">
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs sm:text-sm font-medium text-primary">Experts:</span>
           {result.analysis.selectedExperts.map((expert) => {
             const config = EXPERTS_CONFIG[expert.key];
             return (
-              <span
-                key={expert.key}
-                className={`px-2 py-1 rounded-full text-xs font-medium border ${config?.color || "bg-gray-100"}`}
-              >
+              <span key={expert.key} className={`px-2 py-1 rounded-full text-xs font-medium border ${config?.color || "bg-muted"}`}>
                 {config?.icon} {expert.name}
               </span>
             );
           })}
         </div>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">
-          {result.analysis.reason}
-        </p>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">{result.analysis.reason}</p>
       </div>
 
-      {/* Synthèse */}
       <div className="p-4 sm:p-6">
         <div className="prose prose-base sm:prose-lg max-w-none leading-relaxed prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-p:leading-relaxed prose-strong:text-primary prose-li:leading-relaxed">
-          <ReactMarkdown>{result.synthesis}</ReactMarkdown>
+          <ReactMarkdown components={renderers}>{synthesisBody}</ReactMarkdown>
         </div>
+
+        {sources.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-primary/20">
+            <h4 className="font-serif text-lg sm:text-xl font-bold text-primary mb-4 flex items-center gap-2">
+              <BookMarked className="w-5 h-5" /> Sources
+            </h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {sources.map((src) => {
+                const meta = SOURCE_META[src.type] || SOURCE_META.autre;
+                const Icon = meta.icon;
+                const Wrapper: React.ElementType = src.url ? "a" : "div";
+                const wrapperProps = src.url
+                  ? { href: src.url, target: "_blank", rel: "noopener noreferrer" }
+                  : {};
+                return (
+                  <Wrapper
+                    key={src.n}
+                    id={`source-${src.n}`}
+                    {...wrapperProps}
+                    className={`group relative flex items-start gap-3 rounded-xl border-2 p-3 sm:p-4 transition-all ${meta.className} ${src.url ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""}`}
+                  >
+                    <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-background/60 border border-current/20">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold opacity-70">[{src.n}]</span>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60">{meta.label}</span>
+                      </div>
+                      <div className="font-serif font-semibold text-sm sm:text-base leading-snug">{src.title}</div>
+                      {src.reference && src.reference !== src.title && (
+                        <div className="text-xs opacity-75 mt-0.5">{src.reference}</div>
+                      )}
+                    </div>
+                    {src.url && (
+                      <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    )}
+                  </Wrapper>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Toggle détails experts */}
       <div className="border-t border-primary/20">
         <button
           onClick={() => setShowExpertDetails(!showExpertDetails)}
           className="w-full p-3 flex items-center justify-center gap-2 text-sm text-primary hover:bg-primary/5 transition-colors"
         >
           {showExpertDetails ? (
-            <>
-              <ChevronUp className="w-4 h-4" />
-              Masquer les contributions détaillées
-            </>
+            <><ChevronUp className="w-4 h-4" />Masquer les contributions détaillées</>
           ) : (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              Voir les contributions de chaque expert
-            </>
+            <><ChevronDown className="w-4 h-4" />Voir les contributions de chaque expert</>
           )}
         </button>
 
         {showExpertDetails && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            className="border-t border-primary/20"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="border-t border-primary/20">
             {result.expertContributions.map((contrib, idx) => {
               const config = EXPERTS_CONFIG[contrib.expert];
               return (
-                <div
-                  key={idx}
-                  className="p-4 border-b border-primary/10 last:border-b-0"
-                >
+                <div key={idx} className="p-4 border-b border-primary/10 last:border-b-0">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xl">{config?.icon}</span>
                     <div>
-                      <h4 className="font-serif font-bold text-primary">
-                        {contrib.name}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {contrib.title}
-                      </p>
+                      <h4 className="font-serif font-bold text-primary">{contrib.name}</h4>
+                      <p className="text-xs text-muted-foreground">{contrib.title}</p>
                     </div>
                   </div>
                   <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
