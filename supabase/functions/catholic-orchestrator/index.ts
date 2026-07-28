@@ -342,7 +342,22 @@ Crée une réponse unifiée et bien structurée qui:
 5. Conclut de manière édifiante
 6. RESPECTE STRICTEMENT le niveau de langue demandé ci-dessus
 
-Format ta réponse en markdown avec une belle mise en page.`;
+RÈGLES DE CITATION OBLIGATOIRES:
+- Insère des appels de notes numérotés dans le corps du texte sous la forme [1], [2], [3] à la fin de chaque affirmation appuyée sur une source (Bible, Catéchisme, concile, encyclique, Père de l'Église, etc.).
+- Numérote de façon continue à partir de [1], sans doublons.
+- À la toute fin de ta réponse, ajoute UNIQUEMENT un bloc de code JSON balisé exactement comme ceci (aucun texte après) :
+
+\`\`\`sources
+[
+  {"n": 1, "type": "bible", "title": "Jean 3,16", "reference": "Jn 3,16", "url": "https://www.aelf.fr/bible/Jn/3"},
+  {"n": 2, "type": "catechisme", "title": "CEC §460", "reference": "CEC 460", "url": "https://www.vatican.va/archive/FRA0013/__P1J.HTM"},
+  {"n": 3, "type": "concile", "title": "Lumen Gentium 8", "reference": "LG 8", "url": "https://www.vatican.va/archive/hist_councils/ii_vatican_council/documents/vat-ii_const_19641121_lumen-gentium_fr.html"}
+]
+\`\`\`
+
+Types acceptés: "bible", "catechisme", "concile", "encyclique", "pere", "docteur", "liturgie", "droit_canon", "histoire", "autre". Fournis une \`url\` officielle si possible (vatican.va, aelf.fr, etc.), sinon \`"url": null\`.
+
+Format ta réponse en markdown, puis termine impérativement par le bloc \`\`\`sources.`;
 
     const syntheseResponse = await callLovableAI([
       { role: "system", content: synthesePrompt },
