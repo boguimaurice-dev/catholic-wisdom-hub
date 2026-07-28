@@ -13,6 +13,26 @@ export interface ExpertContribution {
   response: string;
 }
 
+export type SourceType =
+  | "bible"
+  | "catechisme"
+  | "concile"
+  | "encyclique"
+  | "pere"
+  | "docteur"
+  | "liturgie"
+  | "droit_canon"
+  | "histoire"
+  | "autre";
+
+export interface Source {
+  n: number;
+  type: SourceType;
+  title: string;
+  reference?: string;
+  url?: string | null;
+}
+
 export interface ConsultationResult {
   success: boolean;
   errorType?: string;
@@ -22,6 +42,7 @@ export interface ConsultationResult {
   };
   expertContributions: ExpertContribution[];
   synthesis: string;
+  sources?: Source[];
   error?: string;
 }
 
