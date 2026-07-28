@@ -58,10 +58,13 @@ export function useTTS() {
     }
 
     const cleanText = text
+      .replace(/```sources[\s\S]*?```/gi, "")
+      .replace(/```[\s\S]*?```/g, "")
       .replace(/#{1,6}\s*/g, "")
       .replace(/\*\*?/g, "")
       .replace(/_{1,2}/g, "")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/\[\d+\]/g, "")
       .replace(/`{1,3}[^`]*`{1,3}/g, "")
       .replace(/>\s*/g, "")
       .replace(/^[-•]\s*/gm, "")
