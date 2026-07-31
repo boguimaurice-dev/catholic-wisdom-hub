@@ -28,57 +28,11 @@ const SOURCE_META: Record<SourceType, { label: string; icon: typeof BookOpen; cl
   autre:       { label: "Source",           icon: LinkIcon,   className: "bg-muted border-border text-foreground" },
 };
 
-/** Walks React markdown children, splitting text nodes on [n] and injecting footnote links. */
-function withFootnoteLinks(children: ReactNode, valid: Set<number>): ReactNode {
-  if (children == null || typeof children === "boolean") return children;
-  if (typeof children === "number") return children;
-  if (typeof children === "string") {
-    if (!valid.size || !children.includes("[")) return children;
-    const parts: ReactNode[] = [];
-    const re = /\[(\d+)\]/g;
-    let last = 0;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(children)) !== null) {
-      const n = Number(m[1]);
-      if (!valid.has(n)) continue;
-      if (m.index > last) parts.push(children.slice(last, m.index));
-      parts.push(
-        <sup key={`${m.index}-${n}`} className="mx-0.5">
-          <a
-            href={`#source-${n}`}
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById(`source-${n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }}
-            className="text-primary font-semibold no-underline hover:underline"
-          >
-            [{n}]
-          </a>
-        </sup>
-      );
-      last = m.index + m[0].length;
-    }
-    if (!parts.length) return children;
-    if (last < children.length) parts.push(children.slice(last));
-    return parts;
-  }
-  if (Array.isArray(children)) return children.map((c, i) => <span key={i}>{withFootnoteLinks(c, valid)}</span>);
-  return children;
+/** Renderers markdown : notes de bas de page cliquables + glossaire dynamique. */
+function makeFootnoteRenderers(valid: Set<number>) {
+  return makeRichRenderers(valid);
 }
 
-function makeFootnoteRenderers(valid: Set<number>) {
-  const wrap = (Tag: keyof JSX.IntrinsicElements) =>
-    ({ children, node, ...props }: { children?: ReactNode; node?: unknown }) => {
-      void node;
-      return <Tag {...props}>{withFootnoteLinks(children, valid)}</Tag>;
-    };
-  return {
-    p: wrap("p"), li: wrap("li"),
-    strong: wrap("strong"), em: wrap("em"),
-    h1: wrap("h1"), h2: wrap("h2"), h3: wrap("h3"), h4: wrap("h4"),
-    td: wrap("td"), blockquote: wrap("blockquote"),
-  };
-}
 
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
