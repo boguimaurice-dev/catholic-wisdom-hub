@@ -38,28 +38,29 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* Mode Monastique : nuit d'encre, parchemin, cire de bougie */
   .dark {
-    --background: 20 18% 8%;
-    --foreground: 40 30% 92%;
-    --card: 20 18% 11%;
-    --card-foreground: 40 30% 92%;
-    --popover: 20 18% 11%;
-    --popover-foreground: 40 30% 92%;
-    --primary: 40 80% 50%;
-    --primary-foreground: 20 18% 8%;
-    --secondary: 20 60% 30%;
-    --secondary-foreground: 40 30% 92%;
-    --muted: 20 15% 18%;
-    --muted-foreground: 40 18% 60%;
-    --accent: 0 55% 45%;
-    --accent-foreground: 40 30% 92%;
-    --destructive: 0 84% 60%;
+    --background: 225 38% 5%;
+    --foreground: 44 62% 88%;
+    --card: 224 32% 9%;
+    --card-foreground: 44 62% 88%;
+    --popover: 224 32% 9%;
+    --popover-foreground: 44 62% 88%;
+    --primary: 42 74% 58%;
+    --primary-foreground: 225 38% 6%;
+    --secondary: 30 45% 24%;
+    --secondary-foreground: 44 62% 88%;
+    --muted: 224 22% 14%;
+    --muted-foreground: 42 32% 74%;
+    --accent: 36 78% 56%;
+    --accent-foreground: 225 38% 6%;
+    --destructive: 0 70% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 15% 22%;
-    --input: 20 15% 22%;
-    --ring: 40 80% 50%;
-    --cream: 20 15% 14%;
-    --gold-glow: 40 80% 50%;
+    --border: 40 18% 20%;
+    --input: 40 18% 20%;
+    --ring: 42 74% 58%;
+    --cream: 226 26% 12%;
+    --gold-glow: 42 78% 60%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

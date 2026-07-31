@@ -181,7 +181,7 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
       </div>
 
       <div className="p-4 sm:p-6">
-        <div className="prose prose-base sm:prose-lg max-w-none leading-relaxed prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-p:leading-relaxed prose-strong:text-primary prose-li:leading-relaxed">
+        <div className="prose prose-base sm:prose-lg max-w-none leading-relaxed lettrine-prose prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-p:leading-relaxed prose-strong:text-primary prose-li:leading-relaxed">
           <ReactMarkdown components={renderers}>{synthesisBody}</ReactMarkdown>
         </div>
 

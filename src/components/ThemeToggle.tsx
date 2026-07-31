@@ -10,10 +10,12 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       onClick={toggleTheme}
-      className="text-primary-foreground hover:bg-primary-foreground/10"
-      title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+      className="text-primary-foreground hover:bg-primary-foreground/10 gap-1.5"
+      title={theme === "dark" ? "Quitter le Mode Monastique" : "Activer le Mode Monastique"}
+      aria-label={theme === "dark" ? "Quitter le Mode Monastique" : "Activer le Mode Monastique"}
     >
       {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      <span className="hidden lg:inline text-xs">Mode Monastique</span>
     </Button>
   );
 }
