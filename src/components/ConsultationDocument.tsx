@@ -266,7 +266,7 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                     </div>
                   </div>
                   <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
-                    <ReactMarkdown>{contrib.response}</ReactMarkdown>
+                    <ReactMarkdown components={makeRichRenderers(new Set())}>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>
               );
