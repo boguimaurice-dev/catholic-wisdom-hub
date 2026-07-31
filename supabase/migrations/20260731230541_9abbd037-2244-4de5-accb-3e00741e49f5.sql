@@ -1,0 +1,2 @@
+UPDATE plans SET features = '["3 consultations par jour","Experts de base (Bible & Catéchisme) uniquement","Historique 7 jours"]'::jsonb WHERE slug = 'basique';
+UPDATE plans SET features = '["Usage intensif (jusqu''à 1000 consultations/mois - politique d''usage équitable)","Accès aux 8 experts","Historique illimité","Synthèse vocale","Export PDF & Markdown","Réponses prioritaires","Support dédié"]'::jsonb WHERE slug = 'elite';

@@ -49,6 +49,10 @@ export default function Landing() {
               {t("landing.pricingDesc")}
             </p>
             <LandingPricing />
+            <p className="mt-8 text-sm text-muted-foreground/80 max-w-xl mx-auto">
+              {t("landing.pricingInstitutional")}
+            </p>
+
           </motion.div>
         </div>
       </section>

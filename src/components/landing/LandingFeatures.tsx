@@ -1,16 +1,18 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BookOpen, Users, Shield, Mic, MessageCircle, Globe } from "lucide-react";
+import { BookOpen, Users, Shield, Mic, MessageCircle, Globe, FileDown } from "lucide-react";
 
 const featureKeys = [
   { icon: Users, key: "experts", color: "from-accent/15 to-accent/5" },
   { icon: BookOpen, key: "sources", color: "from-secondary/15 to-secondary/5" },
-  { icon: Mic, key: "voice", color: "from-accent/15 to-accent/5" },
-  { icon: Shield, key: "fidelity", color: "from-secondary/15 to-secondary/5" },
-  { icon: MessageCircle, key: "chatbot", color: "from-accent/15 to-accent/5" },
-  { icon: Globe, key: "accessible", color: "from-secondary/15 to-secondary/5" },
+  { icon: FileDown, key: "export", color: "from-accent/15 to-accent/5" },
+  { icon: Mic, key: "voice", color: "from-secondary/15 to-secondary/5" },
+  { icon: Shield, key: "fidelity", color: "from-accent/15 to-accent/5" },
+  { icon: MessageCircle, key: "chatbot", color: "from-secondary/15 to-secondary/5" },
+  { icon: Globe, key: "accessible", color: "from-accent/15 to-accent/5" },
 ];
+
 
 export function LandingFeatures() {
   const { t } = useLanguage();
