@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Cross, Heart } from "lucide-react";
+import { DonationDialog } from "@/components/DonationDialog";
 
 export function LandingFooter() {
   const { t } = useLanguage();
@@ -16,10 +17,12 @@ export function LandingFooter() {
             <span className="font-serif font-bold text-lg">{t("header.title")}</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/donation" className="hover:text-foreground transition-colors flex items-center gap-1">
-              <Heart className="h-3.5 w-3.5" />
-              {t("landing.donate")}
-            </Link>
+            <DonationDialog>
+              <button className="hover:text-foreground transition-colors flex items-center gap-1">
+                <Heart className="h-3.5 w-3.5" />
+                {t("landing.donate")}
+              </button>
+            </DonationDialog>
             <Link to="/auth" className="hover:text-foreground transition-colors">
               {t("landing.login")}
             </Link>
