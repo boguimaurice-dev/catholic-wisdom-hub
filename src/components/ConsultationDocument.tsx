@@ -216,8 +216,8 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                   ? { href: src.url, target: "_blank", rel: "noopener noreferrer" }
                   : {};
                 return (
+                  <div key={src.n} className="relative">
                   <Wrapper
-                    key={src.n}
                     id={`source-${src.n}`}
                     {...wrapperProps}
                     className={`group relative flex items-start gap-3 rounded-xl border-2 p-3 sm:p-4 transition-all ${meta.className} ${src.url ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""}`}
@@ -239,6 +239,13 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                       <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                     )}
                   </Wrapper>
+                  <div className="mt-1.5">
+                    <QuillButton
+                      text={`${src.title}${src.reference && src.reference !== src.title ? ` (${src.reference})` : ""}${src.url ? `\n${src.url}` : ""}`}
+                      source={`Source [${src.n}] — ${meta.label}`}
+                    />
+                  </div>
+                  </div>
                 );
               })}
             </div>
