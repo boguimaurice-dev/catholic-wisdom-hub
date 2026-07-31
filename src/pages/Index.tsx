@@ -405,6 +405,9 @@ export default function Index() {
 
       {/* Chatbot */}
       <Chatbot />
+
+      {/* Panneau Scriptorium (grands écrans) */}
+      <Scriptorium />
     </div>
   );
 }
