@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
 import { makeRichRenderers } from "@/components/GlossaryText";
+import { QuillButton } from "@/components/QuillButton";
 
 
 interface ConsultationDocumentProps {
