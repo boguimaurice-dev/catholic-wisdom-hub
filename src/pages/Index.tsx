@@ -25,6 +25,8 @@ import { Scriptorium } from "@/components/Scriptorium";
 import { QuillButton } from "@/components/QuillButton";
 import { useScriptorium } from "@/hooks/useScriptorium";
 import { LevelSelector, LEVELS } from "@/components/LevelSelector";
+import { SearchFilters, type ResearchFilters } from "@/components/SearchFilters";
+
 import type { ConsultationLevel } from "@/services/orchestrator";
 
 
