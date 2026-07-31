@@ -371,7 +371,9 @@ export default function Index() {
       {/* Input Area */}
       <div className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4 transition-[padding] duration-300 ${panelPad}`}>
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+          <SearchFilters filters={filters} onChange={setFilters} />
           <div className="flex gap-2 sm:gap-3 items-end">
+
             <Button
               type="button"
               variant={isListening ? "destructive" : "secondary"}
