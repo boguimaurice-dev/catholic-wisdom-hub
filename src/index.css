@@ -157,3 +157,24 @@
   margin: 1rem 0;
   letter-spacing: 0.5em;
 }
+
+/* Lettrine solennelle pour les réponses des experts */
+.lettrine-prose > p:first-of-type::first-letter,
+.lettrine-prose > h2 + p::first-letter {
+  font-family: 'Cinzel', Georgia, serif;
+  float: left;
+  font-size: 3.4em;
+  line-height: 0.82;
+  padding: 0.06em 0.12em 0 0;
+  margin-top: 0.06em;
+  color: hsl(var(--gold-glow));
+  text-shadow: 0 1px 0 hsl(var(--primary) / 0.25);
+}
+
+.lettrine-prose h1,
+.lettrine-prose h2 {
+  font-family: 'Cinzel', Georgia, serif;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid hsl(var(--gold-glow) / 0.35);
+  padding-bottom: 0.3em;
+}
