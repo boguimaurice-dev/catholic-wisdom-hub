@@ -15,6 +15,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`;
 
 export function Chatbot() {
   const [open, setOpen] = useState(false);
+  const { open: scriptoriumOpen } = useScriptorium();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
