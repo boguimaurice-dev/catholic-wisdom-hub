@@ -277,6 +277,11 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                       <h4 className="font-serif font-bold text-primary">{contrib.name}</h4>
                       <p className="text-xs text-muted-foreground">{contrib.title}</p>
                     </div>
+                    <QuillButton
+                      className="ml-auto"
+                      text={contrib.response}
+                      source={`${contrib.name} — ${contrib.title}`}
+                    />
                   </div>
                   <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
                     <ReactMarkdown components={makeRichRenderers(new Set())}>{contrib.response}</ReactMarkdown>
