@@ -184,6 +184,18 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
           <ReactMarkdown components={renderers}>{synthesisBody}</ReactMarkdown>
         </div>
 
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={copyCitation} className="text-xs">
+            {citationCopied ? <Check className="w-3.5 h-3.5 mr-1.5" /> : <Quote className="w-3.5 h-3.5 mr-1.5" />}
+            Copier la citation académique
+          </Button>
+          <span className="text-xs text-muted-foreground italic">
+            Termes soulignés : cliquez pour la définition
+          </span>
+        </div>
+
+
+
         {sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-primary/20">
             <h4 className="font-serif text-lg sm:text-xl font-bold text-primary mb-4 flex items-center gap-2">
