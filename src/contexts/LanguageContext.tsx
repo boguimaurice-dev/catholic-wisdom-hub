@@ -79,6 +79,7 @@ const translations: Record<Language, Record<string, any>> = {
       history: "Historique",
     },
     landing: {
+      donate: "Faire un don",
       poweredByAI: "Propulsé par l'Intelligence Artificielle",
       heroTitle1: "Explorez la foi catholique",
       heroTitle2: "avec 8 experts",
@@ -238,6 +239,7 @@ const translations: Record<Language, Record<string, any>> = {
       history: "History",
     },
     landing: {
+      donate: "Donate",
       poweredByAI: "Powered by Artificial Intelligence",
       heroTitle1: "Explore the Catholic faith",
       heroTitle2: "with 8 theological",
@@ -397,6 +399,7 @@ const translations: Record<Language, Record<string, any>> = {
       history: "Historial",
     },
     landing: {
+      donate: "Hacer una donación",
       poweredByAI: "Impulsado por Inteligencia Artificial",
       heroTitle1: "Explore la fe católica",
       heroTitle2: "con 8 expertos",
@@ -556,6 +559,7 @@ const translations: Record<Language, Record<string, any>> = {
       history: "Histórico",
     },
     landing: {
+      donate: "Fazer um donativo",
       poweredByAI: "Impulsionado por Inteligência Artificial",
       heroTitle1: "Explore a fé católica",
       heroTitle2: "com 8 especialistas",
