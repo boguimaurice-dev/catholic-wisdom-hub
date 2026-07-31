@@ -40,6 +40,8 @@ function makeFootnoteRenderers(valid: Set<number>) {
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [citationCopied, setCitationCopied] = useState(false);
+
 
   const { body: synthesisBody, sources: parsedSources } = parseSources(result.synthesis || "");
   const sources: Source[] = (result.sources && result.sources.length ? result.sources : parsedSources)
