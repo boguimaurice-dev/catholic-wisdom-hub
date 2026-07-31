@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import {
   Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
   BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
+  Quote,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
+import { makeRichRenderers } from "@/components/GlossaryText";
+
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
