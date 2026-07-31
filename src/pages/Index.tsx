@@ -339,6 +339,9 @@ export default function Index() {
                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
                            {isSpeaking ? t("index.stop") : t("index.listen")}
                          </Button>
+                        <div className="mt-2">
+                          <QuillButton text={message.content} source="Réponse de l'orchestrateur" />
+                        </div>
                       </div>
                     )}
                   </motion.div>
