@@ -83,18 +83,11 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
-          {
-            // Liturgy edge function — cache successful GET/POST responses for offline reading
-            urlPattern: /\/functions\/v1\/liturgy-meditation/,
-            handler: "NetworkFirst",
-            method: "POST",
-            options: {
-              cacheName: "liturgy-api",
-              networkTimeoutSeconds: 6,
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
+          // Note: the liturgy-meditation edge function is a POST request.
+          // Cache Storage cannot store POST responses, so a NetworkFirst entry
+          // would only add a timeout that breaks slow AI generations.
+          // Offline availability is handled by localStorage (src/lib/liturgyCache.ts).
+
         ],
       },
     }),
