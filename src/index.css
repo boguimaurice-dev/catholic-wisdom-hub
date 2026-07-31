@@ -92,11 +92,11 @@
   }
 }
 
-/* Improve dark-mode contrast on night-blue backgrounds */
+/* Mode Monastique : texte parchemin (#f4ebd0) sur fond d'encre */
 .dark {
-  --foreground: 40 35% 96%;
-  --card-foreground: 40 35% 96%;
-  --muted-foreground: 40 22% 78%;
+  --foreground: 44 68% 88%;
+  --card-foreground: 44 68% 88%;
+  --muted-foreground: 42 34% 76%;
 }
 
 @layer utilities {
