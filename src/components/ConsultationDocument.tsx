@@ -112,6 +112,25 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const generateCitation = () => {
+    const now = new Date();
+    const dateFr = now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    const experts = result.analysis.selectedExperts.map((e) => e.name).join(", ");
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const srcList = sources.length
+      ? ` Sources citées : ${sources.map((s) => `[${s.n}] ${s.title}${s.reference ? `, ${s.reference}` : ""}`).join(" ; ")}.`
+      : "";
+    return `Assistant Recherche Catholique (orchestrateur assistant en chef et experts : ${experts}), « ${question} », consultation théologique générée le ${dateFr}, ${url}.${srcList}`;
+  };
+
+  const copyCitation = async () => {
+    await navigator.clipboard.writeText(generateCitation());
+    setCitationCopied(true);
+    toast.success("Citation académique copiée");
+    setTimeout(() => setCitationCopied(false), 2000);
+  };
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
