@@ -43,11 +43,28 @@ export default function Index() {
     const saved = typeof window !== "undefined" ? localStorage.getItem("consultation_level") : null;
     return (saved as ConsultationLevel) || "grand_public";
   });
+  const [filters, setFilters] = useState<ResearchFilters>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("research_filters") : null;
+      const parsed = saved ? JSON.parse(saved) : null;
+      return {
+        periods: Array.isArray(parsed?.periods) ? parsed.periods : [],
+        sources: Array.isArray(parsed?.sources) ? parsed.sources : [],
+      };
+    } catch {
+      return { periods: [], sources: [] };
+    }
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem("consultation_level", level);
   }, [level]);
+
+  useEffect(() => {
+    localStorage.setItem("research_filters", JSON.stringify(filters));
+  }, [filters]);
+
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
