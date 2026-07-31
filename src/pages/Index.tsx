@@ -152,8 +152,10 @@ export default function Index() {
     }
   };
 
+  const panelPad = scriptoriumOpen ? "lg:pr-[360px] xl:pr-[400px]" : "";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <div className={`min-h-screen bg-background flex flex-col relative transition-[padding] duration-300 ${panelPad}`}>
       {/* Decorative background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{
