@@ -112,7 +112,7 @@ export default function Index() {
       setCurrentPhase(t("index.analyzePhase"));
       setTimeout(() => setCurrentPhase(t("index.selectPhase")), 1000);
 
-      const result = await consultOrchestrator(question, messages, level);
+      const result = await consultOrchestrator(question, messages, level, filters);
 
       if (result.success) {
         const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
