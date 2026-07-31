@@ -21,6 +21,9 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
+import { Scriptorium } from "@/components/Scriptorium";
+import { QuillButton } from "@/components/QuillButton";
+import { useScriptorium } from "@/hooks/useScriptorium";
 import { LevelSelector, LEVELS } from "@/components/LevelSelector";
 import type { ConsultationLevel } from "@/services/orchestrator";
 
@@ -48,6 +51,7 @@ export default function Index() {
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
   const { scale, increase, decrease, reset } = useFontSize();
+  const { open: scriptoriumOpen } = useScriptorium();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -152,8 +156,10 @@ export default function Index() {
     }
   };
 
+  const panelPad = scriptoriumOpen ? "lg:pr-[360px] xl:pr-[400px]" : "";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <div className={`min-h-screen bg-background flex flex-col relative transition-[padding] duration-300 ${panelPad}`}>
       {/* Decorative background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{
@@ -333,6 +339,9 @@ export default function Index() {
                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
                            {isSpeaking ? t("index.stop") : t("index.listen")}
                          </Button>
+                        <div className="mt-2">
+                          <QuillButton text={message.content} source="Réponse de l'orchestrateur" />
+                        </div>
                       </div>
                     )}
                   </motion.div>
@@ -360,7 +369,7 @@ export default function Index() {
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
+      <div className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4 transition-[padding] duration-300 ${panelPad}`}>
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button
@@ -396,6 +405,9 @@ export default function Index() {
 
       {/* Chatbot */}
       <Chatbot />
+
+      {/* Panneau Scriptorium (grands écrans) */}
+      <Scriptorium />
     </div>
   );
 }

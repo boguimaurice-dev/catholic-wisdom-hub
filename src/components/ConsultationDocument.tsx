@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
 import { makeRichRenderers } from "@/components/GlossaryText";
+import { QuillButton } from "@/components/QuillButton";
 
 
 interface ConsultationDocumentProps {
@@ -189,6 +190,11 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
             {citationCopied ? <Check className="w-3.5 h-3.5 mr-1.5" /> : <Quote className="w-3.5 h-3.5 mr-1.5" />}
             Copier la citation académique
           </Button>
+          <QuillButton
+            text={synthesisBody}
+            source={`Synthèse — ${question}`}
+            label="Ajouter au Scriptorium"
+          />
           <span className="text-xs text-muted-foreground italic">
             Termes soulignés : cliquez pour la définition
           </span>
@@ -210,8 +216,8 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                   ? { href: src.url, target: "_blank", rel: "noopener noreferrer" }
                   : {};
                 return (
+                  <div key={src.n} className="relative">
                   <Wrapper
-                    key={src.n}
                     id={`source-${src.n}`}
                     {...wrapperProps}
                     className={`group relative flex items-start gap-3 rounded-xl border-2 p-3 sm:p-4 transition-all ${meta.className} ${src.url ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""}`}
@@ -233,6 +239,13 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                       <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                     )}
                   </Wrapper>
+                  <div className="mt-1.5">
+                    <QuillButton
+                      text={`${src.title}${src.reference && src.reference !== src.title ? ` (${src.reference})` : ""}${src.url ? `\n${src.url}` : ""}`}
+                      source={`Source [${src.n}] — ${meta.label}`}
+                    />
+                  </div>
+                  </div>
                 );
               })}
             </div>
@@ -264,6 +277,11 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                       <h4 className="font-serif font-bold text-primary">{contrib.name}</h4>
                       <p className="text-xs text-muted-foreground">{contrib.title}</p>
                     </div>
+                    <QuillButton
+                      className="ml-auto"
+                      text={contrib.response}
+                      source={`${contrib.name} — ${contrib.title}`}
+                    />
                   </div>
                   <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
                     <ReactMarkdown components={makeRichRenderers(new Set())}>{contrib.response}</ReactMarkdown>
