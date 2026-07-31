@@ -32,6 +32,16 @@ export function LandingHeader() {
               {t("landing.login")}
             </Button>
           </Link>
+          <Link to="/donation">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-accent/60 text-accent hover:bg-accent/10 hover:text-accent gap-1.5"
+            >
+              <Heart className="h-3.5 w-3.5" />
+              <span className="hidden xs:inline sm:inline">{t("landing.donate")}</span>
+            </Button>
+          </Link>
           <Link to="/auth">
             <Button size="sm" className="shadow-md hover:shadow-lg transition-shadow">
               {t("landing.start")}
