@@ -51,6 +51,7 @@ export default function Index() {
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
   const { scale, increase, decrease, reset } = useFontSize();
+  const { open: scriptoriumOpen } = useScriptorium();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
