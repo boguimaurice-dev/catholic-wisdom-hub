@@ -63,6 +63,7 @@ export function useScriptorium() {
   const toggle = useCallback(() => {
     setOpen((prev) => {
       localStorage.setItem(OPEN_KEY, String(!prev));
+      window.dispatchEvent(new CustomEvent(EVENT));
       return !prev;
     });
   }, []);

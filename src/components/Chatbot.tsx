@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { makeRichRenderers } from "@/components/GlossaryText";
+import { useScriptorium } from "@/hooks/useScriptorium";
 
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -14,6 +15,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`;
 
 export function Chatbot() {
   const [open, setOpen] = useState(false);
+  const { open: scriptoriumOpen } = useScriptorium();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +109,7 @@ export function Chatbot() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className="fixed bottom-24 right-4 z-50"
+            className={`fixed bottom-24 right-4 z-50 transition-[margin] duration-300 ${scriptoriumOpen ? "lg:mr-[360px] xl:mr-[400px]" : ""}`}
           >
             <Button
               onClick={() => setOpen(true)}
@@ -127,7 +129,7 @@ export function Chatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-4 z-50 w-[360px] sm:w-[420px] h-[520px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className={`fixed bottom-24 right-4 z-50 w-[360px] sm:w-[420px] h-[520px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-[margin] duration-300 ${scriptoriumOpen ? "lg:mr-[360px] xl:mr-[400px]" : ""}`}
           >
             {/* Header */}
             <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
