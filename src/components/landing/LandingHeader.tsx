@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Cross } from "lucide-react";
+import { Cross, Heart } from "lucide-react";
 
 export function LandingHeader() {
   const { t } = useLanguage();
