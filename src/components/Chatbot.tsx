@@ -157,8 +157,9 @@ export function Chatbot() {
                   >
                     {msg.role === "assistant" ? (
                       <div className="prose prose-base max-w-none leading-relaxed prose-p:leading-relaxed">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <ReactMarkdown components={makeRichRenderers(new Set())}>{msg.content}</ReactMarkdown>
                       </div>
+
                     ) : (
                       <p>{msg.content}</p>
                     )}
