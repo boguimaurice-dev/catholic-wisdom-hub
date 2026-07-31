@@ -240,18 +240,44 @@ serve(async (req) => {
       }, 403);
     }
 
-    const { question, conversationHistory = [], level = "grand_public" } = await req.json();
+    const { question, conversationHistory = [], level = "grand_public", filters = { periods: [], sources: [] } } = await req.json();
 
     if (!question) {
       return jsonResponse({ error: "Question requise" }, 400);
     }
+
+    const PERIOD_LABELS: Record<string, string> = {
+      antiquite: "Antiquité chrétienne et période patristique (Ier-VIIe siècle)",
+      moyen_age: "Moyen-Âge et scolastique (VIIIe-XVe siècle)",
+      moderne: "Époque moderne (XVIe-XIXe siècle : Trente, Vatican I)",
+      contemporain: "Période contemporaine (XXe-XXIe siècle : Vatican II, papes récents)",
+    };
+    const SOURCE_LABELS: Record<string, string> = {
+      magistere: "le Magistère (documents pontificaux, conciles, Catéchisme, Vatican)",
+      ecriture: "l'Écriture Sainte (Ancien et Nouveau Testament)",
+      tradition: "la Tradition et les Pères de l'Église",
+    };
+
+    const periodList: string[] = Array.isArray(filters?.periods) ? filters.periods : [];
+    const sourceList: string[] = Array.isArray(filters?.sources) ? filters.sources : [];
+    const filterParts: string[] = [];
+    if (periodList.length) {
+      filterParts.push(`PÉRIODES HISTORIQUES À PRIVILÉGIER: ${periodList.map((p) => PERIOD_LABELS[p] || p).join(" ; ")}. Ancre l'argumentation dans ces périodes.`);
+    }
+    if (sourceList.length) {
+      filterParts.push(`TYPES DE SOURCES À PRIVILÉGIER: ${sourceList.map((s) => SOURCE_LABELS[s] || s).join(" ; ")}. Appuie prioritairement tes citations sur ces sources.`);
+    }
+    const filterInstruction = filterParts.length
+      ? `\n\nFILTRES DE RECHERCHE DEMANDÉS PAR L'UTILISATEUR:\n${filterParts.join("\n")}\nRespecte ces filtres sans jamais trahir la doctrine catholique.`
+      : "";
 
     const LEVEL_INSTRUCTIONS: Record<string, string> = {
       grand_public: `NIVEAU: GRAND PUBLIC. Adapte ta réponse à un fidèle sans formation théologique. Utilise un vocabulaire simple et accessible, explique les termes techniques, privilégie des exemples concrets et pastoraux. Reste court et édifiant.`,
       catechiste: `NIVEAU: CATÉCHISTE / FORMATION. Adapte ta réponse à un catéchiste ou animateur en formation. Structure pédagogiquement, cite le Catéchisme (numéros CEC), donne des références bibliques précises, propose des clefs pour transmettre.`,
       universitaire: `NIVEAU: UNIVERSITAIRE / THÉOLOGIEN. Adapte ta réponse à un lecteur formé en théologie. Utilise le vocabulaire technique précis, cite les sources primaires (Pères, Docteurs, conciles, encycliques, langues originales grec/hébreu/latin), développe l'argumentation avec rigueur académique et nuances doctrinales.`,
     };
-    const levelInstruction = LEVEL_INSTRUCTIONS[level] || LEVEL_INSTRUCTIONS.grand_public;
+    const levelInstruction = (LEVEL_INSTRUCTIONS[level] || LEVEL_INSTRUCTIONS.grand_public) + filterInstruction;
+
 
     // Phase 1: Analyse par l'Orchestrateur
     const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
