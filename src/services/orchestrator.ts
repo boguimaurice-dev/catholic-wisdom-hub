@@ -5,10 +5,16 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/catholic
 
 export type ConsultationLevel = "grand_public" | "catechiste" | "universitaire";
 
+export interface ResearchFiltersPayload {
+  periods: string[];
+  sources: string[];
+}
+
 export async function consultOrchestrator(
   question: string,
   conversationHistory: Message[] = [],
-  level: ConsultationLevel = "grand_public"
+  level: ConsultationLevel = "grand_public",
+  filters: ResearchFiltersPayload = { periods: [], sources: [] }
 ): Promise<ConsultationResult> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -22,12 +28,14 @@ export async function consultOrchestrator(
     body: JSON.stringify({
       question,
       level,
+      filters,
       conversationHistory: conversationHistory.map((m) => ({
         role: m.role,
         content: m.content,
       })),
     }),
   });
+
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

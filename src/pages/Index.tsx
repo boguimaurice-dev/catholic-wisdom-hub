@@ -25,6 +25,8 @@ import { Scriptorium } from "@/components/Scriptorium";
 import { QuillButton } from "@/components/QuillButton";
 import { useScriptorium } from "@/hooks/useScriptorium";
 import { LevelSelector, LEVELS } from "@/components/LevelSelector";
+import { SearchFilters, type ResearchFilters } from "@/components/SearchFilters";
+
 import type { ConsultationLevel } from "@/services/orchestrator";
 
 
@@ -41,11 +43,28 @@ export default function Index() {
     const saved = typeof window !== "undefined" ? localStorage.getItem("consultation_level") : null;
     return (saved as ConsultationLevel) || "grand_public";
   });
+  const [filters, setFilters] = useState<ResearchFilters>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("research_filters") : null;
+      const parsed = saved ? JSON.parse(saved) : null;
+      return {
+        periods: Array.isArray(parsed?.periods) ? parsed.periods : [],
+        sources: Array.isArray(parsed?.sources) ? parsed.sources : [],
+      };
+    } catch {
+      return { periods: [], sources: [] };
+    }
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem("consultation_level", level);
   }, [level]);
+
+  useEffect(() => {
+    localStorage.setItem("research_filters", JSON.stringify(filters));
+  }, [filters]);
+
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
@@ -93,7 +112,7 @@ export default function Index() {
       setCurrentPhase(t("index.analyzePhase"));
       setTimeout(() => setCurrentPhase(t("index.selectPhase")), 1000);
 
-      const result = await consultOrchestrator(question, messages, level);
+      const result = await consultOrchestrator(question, messages, level, filters);
 
       if (result.success) {
         const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
@@ -371,7 +390,9 @@ export default function Index() {
       {/* Input Area */}
       <div className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4 transition-[padding] duration-300 ${panelPad}`}>
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+          <SearchFilters filters={filters} onChange={setFilters} />
           <div className="flex gap-2 sm:gap-3 items-end">
+
             <Button
               type="button"
               variant={isListening ? "destructive" : "secondary"}
