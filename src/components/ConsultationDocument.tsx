@@ -189,6 +189,11 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
             {citationCopied ? <Check className="w-3.5 h-3.5 mr-1.5" /> : <Quote className="w-3.5 h-3.5 mr-1.5" />}
             Copier la citation académique
           </Button>
+          <QuillButton
+            text={synthesisBody}
+            source={`Synthèse — ${question}`}
+            label="Ajouter au Scriptorium"
+          />
           <span className="text-xs text-muted-foreground italic">
             Termes soulignés : cliquez pour la définition
           </span>
