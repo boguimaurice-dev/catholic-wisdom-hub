@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import {
   Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
   BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
+  Quote,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
+import { makeRichRenderers } from "@/components/GlossaryText";
+
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
@@ -28,61 +31,17 @@ const SOURCE_META: Record<SourceType, { label: string; icon: typeof BookOpen; cl
   autre:       { label: "Source",           icon: LinkIcon,   className: "bg-muted border-border text-foreground" },
 };
 
-/** Walks React markdown children, splitting text nodes on [n] and injecting footnote links. */
-function withFootnoteLinks(children: ReactNode, valid: Set<number>): ReactNode {
-  if (children == null || typeof children === "boolean") return children;
-  if (typeof children === "number") return children;
-  if (typeof children === "string") {
-    if (!valid.size || !children.includes("[")) return children;
-    const parts: ReactNode[] = [];
-    const re = /\[(\d+)\]/g;
-    let last = 0;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(children)) !== null) {
-      const n = Number(m[1]);
-      if (!valid.has(n)) continue;
-      if (m.index > last) parts.push(children.slice(last, m.index));
-      parts.push(
-        <sup key={`${m.index}-${n}`} className="mx-0.5">
-          <a
-            href={`#source-${n}`}
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById(`source-${n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }}
-            className="text-primary font-semibold no-underline hover:underline"
-          >
-            [{n}]
-          </a>
-        </sup>
-      );
-      last = m.index + m[0].length;
-    }
-    if (!parts.length) return children;
-    if (last < children.length) parts.push(children.slice(last));
-    return parts;
-  }
-  if (Array.isArray(children)) return children.map((c, i) => <span key={i}>{withFootnoteLinks(c, valid)}</span>);
-  return children;
+/** Renderers markdown : notes de bas de page cliquables + glossaire dynamique. */
+function makeFootnoteRenderers(valid: Set<number>) {
+  return makeRichRenderers(valid);
 }
 
-function makeFootnoteRenderers(valid: Set<number>) {
-  const wrap = (Tag: keyof JSX.IntrinsicElements) =>
-    ({ children, node, ...props }: { children?: ReactNode; node?: unknown }) => {
-      void node;
-      return <Tag {...props}>{withFootnoteLinks(children, valid)}</Tag>;
-    };
-  return {
-    p: wrap("p"), li: wrap("li"),
-    strong: wrap("strong"), em: wrap("em"),
-    h1: wrap("h1"), h2: wrap("h2"), h3: wrap("h3"), h4: wrap("h4"),
-    td: wrap("td"), blockquote: wrap("blockquote"),
-  };
-}
 
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [citationCopied, setCitationCopied] = useState(false);
+
 
   const { body: synthesisBody, sources: parsedSources } = parseSources(result.synthesis || "");
   const sources: Source[] = (result.sources && result.sources.length ? result.sources : parsedSources)
@@ -155,6 +114,25 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const generateCitation = () => {
+    const now = new Date();
+    const dateFr = now.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    const experts = result.analysis.selectedExperts.map((e) => e.name).join(", ");
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const srcList = sources.length
+      ? ` Sources citées : ${sources.map((s) => `[${s.n}] ${s.title}${s.reference ? `, ${s.reference}` : ""}`).join(" ; ")}.`
+      : "";
+    return `Assistant Recherche Catholique (orchestrateur assistant en chef et experts : ${experts}), « ${question} », consultation théologique générée le ${dateFr}, ${url}.${srcList}`;
+  };
+
+  const copyCitation = async () => {
+    await navigator.clipboard.writeText(generateCitation());
+    setCitationCopied(true);
+    toast.success("Citation académique copiée");
+    setTimeout(() => setCitationCopied(false), 2000);
+  };
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -205,6 +183,18 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
         <div className="prose prose-base sm:prose-lg max-w-none leading-relaxed prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-p:leading-relaxed prose-strong:text-primary prose-li:leading-relaxed">
           <ReactMarkdown components={renderers}>{synthesisBody}</ReactMarkdown>
         </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={copyCitation} className="text-xs">
+            {citationCopied ? <Check className="w-3.5 h-3.5 mr-1.5" /> : <Quote className="w-3.5 h-3.5 mr-1.5" />}
+            Copier la citation académique
+          </Button>
+          <span className="text-xs text-muted-foreground italic">
+            Termes soulignés : cliquez pour la définition
+          </span>
+        </div>
+
+
 
         {sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-primary/20">
@@ -276,7 +266,7 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
                     </div>
                   </div>
                   <div className="prose prose-base max-w-none leading-relaxed text-foreground/90 prose-p:leading-relaxed">
-                    <ReactMarkdown>{contrib.response}</ReactMarkdown>
+                    <ReactMarkdown components={makeRichRenderers(new Set())}>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>
               );
