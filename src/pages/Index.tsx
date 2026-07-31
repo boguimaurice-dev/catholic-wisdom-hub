@@ -21,6 +21,9 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
+import { Scriptorium } from "@/components/Scriptorium";
+import { QuillButton } from "@/components/QuillButton";
+import { useScriptorium } from "@/hooks/useScriptorium";
 import { LevelSelector, LEVELS } from "@/components/LevelSelector";
 import type { ConsultationLevel } from "@/services/orchestrator";
 
