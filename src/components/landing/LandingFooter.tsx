@@ -18,7 +18,7 @@ export function LandingFooter() {
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link to="/donation" className="hover:text-foreground transition-colors flex items-center gap-1">
               <Heart className="h-3.5 w-3.5" />
-              {t("landing.donate") || "Faire un don"}
+              {t("landing.donate")}
             </Link>
             <Link to="/auth" className="hover:text-foreground transition-colors">
               {t("landing.login")}

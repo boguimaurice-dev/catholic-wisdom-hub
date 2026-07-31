@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Cross } from "lucide-react";
+import { Cross, Heart } from "lucide-react";
 
 export function LandingHeader() {
   const { t } = useLanguage();
@@ -30,6 +30,16 @@ export function LandingHeader() {
           <Link to="/auth" className="hidden sm:block">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               {t("landing.login")}
+            </Button>
+          </Link>
+          <Link to="/donation">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-accent/60 text-accent hover:bg-accent/10 hover:text-accent gap-1.5"
+            >
+              <Heart className="h-3.5 w-3.5" />
+              <span className="hidden xs:inline sm:inline">{t("landing.donate")}</span>
             </Button>
           </Link>
           <Link to="/auth">
