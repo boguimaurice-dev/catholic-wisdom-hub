@@ -18,7 +18,7 @@ import { toast } from "sonner";
 const copy: Record<Language, Record<string, string>> = {
   fr: {
     title: "Faire un don",
-    subtitle: "Soutenez l'Assistant Recherche Catholique et le Monastère Sainte Marie de Bouaké.",
+    subtitle: "Soutenez Scriptorium et le Monastère Sainte Marie de Bouaké.",
     impact:
       "Chaque contribution, même minime, permet de maintenir les 3 consultations quotidiennes gratuites pour tous et de financer les serveurs des 8 experts IA.",
     chooseAmount: "Choisissez un montant",
@@ -35,7 +35,7 @@ const copy: Record<Language, Record<string, string>> = {
   },
   en: {
     title: "Make a donation",
-    subtitle: "Support the Catholic Research Assistant and the Monastery of Saint Mary of Bouaké.",
+    subtitle: "Support Scriptorium and the Monastery of Saint Mary of Bouaké.",
     impact:
       "Every contribution, however small, helps keep the 3 free daily consultations available to all and funds the servers of the 8 AI experts.",
     chooseAmount: "Choose an amount",
@@ -52,7 +52,7 @@ const copy: Record<Language, Record<string, string>> = {
   },
   es: {
     title: "Hacer una donación",
-    subtitle: "Apoye el Asistente de Investigación Católica y el Monasterio Santa María de Bouaké.",
+    subtitle: "Apoye Scriptorium y el Monasterio Santa María de Bouaké.",
     impact:
       "Cada contribución, por pequeña que sea, permite mantener las 3 consultas diarias gratuitas para todos y financiar los servidores de los 8 expertos de IA.",
     chooseAmount: "Elija un importe",

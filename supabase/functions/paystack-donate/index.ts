@@ -12,27 +12,41 @@ serve(async (req) => {
   }
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PaystackliveAPI");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PaystackliveAPI") ?? Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!PAYSTACK_SECRET_KEY) throw new Error("Paystack API key not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    const body = await req.json().catch(() => ({}));
+    const { amount, callbackUrl, currency, email: emailInput } = body ?? {};
+
+    // Donations are open to everyone: authentication is optional.
+    let email: string | null = null;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Not authenticated");
+    if (authHeader) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data } = await supabase.auth.getUser();
+        email = data?.user?.email ?? null;
+      } catch (_) {
+        email = null;
+      }
+    }
+    if (!email && typeof emailInput === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput)) {
+      email = emailInput;
+    }
+    if (!email) email = "dons@mbbm.tech";
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Not authenticated");
-
-    const { amount, callbackUrl, currency } = await req.json();
     const selectedCurrency = ["XOF", "USD", "GHS", "NGN", "ZAR", "KES"].includes(currency) ? currency : "XOF";
+    const numericAmount = Number(amount);
     const minAmount = selectedCurrency === "USD" ? 1 : 100;
-    if (!amount || amount < minAmount) throw new Error(`Montant minimum: ${minAmount} ${selectedCurrency}`);
-    if (!callbackUrl) throw new Error("Missing callbackUrl");
+    if (!Number.isFinite(numericAmount) || numericAmount < minAmount) {
+      throw new Error(`Montant minimum: ${minAmount} ${selectedCurrency}`);
+    }
+    if (!callbackUrl || typeof callbackUrl !== "string") throw new Error("Missing callbackUrl");
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -41,12 +55,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: user.email,
-        amount: amount * 100,
+        email,
+        amount: Math.round(numericAmount) * 100,
         currency: selectedCurrency,
         callback_url: callbackUrl,
         metadata: {
-          user_id: user.id,
           type: "donation",
           description: "Don libre - Monastère Sainte Marie de Bouaké",
         },
@@ -67,9 +80,11 @@ serve(async (req) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    // Return 200 so the client can read the message instead of a generic non-2xx error.
     return new Response(JSON.stringify({ success: false, error: message }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
