@@ -182,7 +182,7 @@ const translations: Record<Language, Record<string, any>> = {
     },
     faq: {
       title: "Questions fréquentes",
-      q1: "Qu'est-ce que l'Assistant Catholique ?",
+      q1: "Qu'est-ce que Scriptorium ?",
       a1: "C'est un outil d'intelligence artificielle qui consulte 8 experts spécialisés (théologie, droit canon, liturgie, Bible, morale, histoire, patristique et vie monastique) pour répondre à vos questions sur la foi catholique avec rigueur et nuance.",
       q2: "Les réponses sont-elles fiables ?",
       a2: "Les réponses s'appuient sur les sources du Magistère, des Pères de l'Église et de la Tradition. Cependant, elles ne remplacent pas l'accompagnement d'un prêtre ou d'un directeur spirituel.",
@@ -349,7 +349,7 @@ const translations: Record<Language, Record<string, any>> = {
     },
     faq: {
       title: "Frequently asked questions",
-      q1: "What is the Catholic Assistant?",
+      q1: "What is Scriptorium?",
       a1: "It is an AI tool that consults 8 specialized experts (theology, canon law, liturgy, Bible, morality, history, patristics and monastic life) to answer your questions about the Catholic faith.",
       q2: "Are the answers reliable?",
       a2: "The answers are based on Magisterium sources, Church Fathers and Tradition. However, they do not replace guidance from a priest or spiritual director.",
@@ -516,7 +516,7 @@ const translations: Record<Language, Record<string, any>> = {
     },
     faq: {
       title: "Preguntas frecuentes",
-      q1: "¿Qué es el Asistente Católico?",
+      q1: "¿Qué es Scriptorium?",
       a1: "Es una herramienta de IA que consulta 8 expertos especializados para responder sus preguntas sobre la fe católica con rigor y matiz.",
       q2: "¿Son fiables las respuestas?",
       a2: "Las respuestas se basan en fuentes del Magisterio, Padres de la Iglesia y la Tradición. Sin embargo, no reemplazan la guía de un sacerdote.",
@@ -683,7 +683,7 @@ const translations: Record<Language, Record<string, any>> = {
     },
     faq: {
       title: "Perguntas frequentes",
-      q1: "O que é o Assistente Católico?",
+      q1: "O que é Scriptorium?",
       a1: "É uma ferramenta de IA que consulta 8 especialistas para responder suas perguntas sobre a fé católica com rigor e nuance.",
       q2: "As respostas são confiáveis?",
       a2: "As respostas são baseadas em fontes do Magistério, Padres da Igreja e Tradição. No entanto, não substituem a orientação de um padre.",
