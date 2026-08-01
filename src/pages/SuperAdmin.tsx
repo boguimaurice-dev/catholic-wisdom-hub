@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { InstitutionCodesAdmin } from "@/components/admin/InstitutionCodesAdmin";
 import {
   Activity, ArrowLeft, BarChart3, Database, FileText, Loader2, RefreshCw,
   Shield, Users, CreditCard, TrendingUp, AlertTriangle, CheckCircle2, Server,
