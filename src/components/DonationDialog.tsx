@@ -69,7 +69,7 @@ const copy: Record<Language, Record<string, string>> = {
   },
   pt: {
     title: "Fazer um donativo",
-    subtitle: "Apoie o Assistente de Pesquisa Católica e o Mosteiro Santa Maria de Bouaké.",
+    subtitle: "Apoie o Scriptorium e o Mosteiro Santa Maria de Bouaké.",
     impact:
       "Cada contribuição, mesmo pequena, permite manter as 3 consultas diárias gratuitas para todos e financiar os servidores dos 8 especialistas de IA.",
     chooseAmount: "Escolha um valor",
