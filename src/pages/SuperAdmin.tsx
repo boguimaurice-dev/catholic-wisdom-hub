@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { InstitutionCodesAdmin } from "@/components/admin/InstitutionCodesAdmin";
 import {
   Activity, ArrowLeft, BarChart3, Database, FileText, Loader2, RefreshCw,
   Shield, Users, CreditCard, TrendingUp, AlertTriangle, CheckCircle2, Server,
@@ -244,6 +245,7 @@ export default function SuperAdmin() {
                 <TabsTrigger value="security"><Shield className="h-4 w-4 mr-1" />Sécurité</TabsTrigger>
                 <TabsTrigger value="performance"><Server className="h-4 w-4 mr-1" />Performance</TabsTrigger>
                 <TabsTrigger value="database"><Database className="h-4 w-4 mr-1" />Base de données</TabsTrigger>
+                <TabsTrigger value="codes"><Shield className="h-4 w-4 mr-1" />Codes institutionnels</TabsTrigger>
               </TabsList>
             </ScrollArea>
 
@@ -444,6 +446,13 @@ export default function SuperAdmin() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* INSTITUTION CODES */}
+            <TabsContent value="codes">
+              <InstitutionCodesAdmin />
+            </TabsContent>
+
+
 
             {/* SECURITY */}
             <TabsContent value="security" className="space-y-4">

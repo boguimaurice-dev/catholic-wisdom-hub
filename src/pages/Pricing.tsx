@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { InstitutionCodeCard } from "@/components/InstitutionCodeCard";
 
 function detectProvider(phone: string): "orange" | "mtn" | "moov" | null {
   const d = phone.replace(/\D/g, "");
@@ -331,6 +332,8 @@ export default function Pricing() {
             </p>
           </div>
         )}
+
+        <InstitutionCodeCard onActivated={refresh} />
 
         <div className="mt-12 text-center">
           <Link to="/donation">
