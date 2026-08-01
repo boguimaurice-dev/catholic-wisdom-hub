@@ -332,6 +332,8 @@ export default function Pricing() {
           </div>
         )}
 
+        <InstitutionCodeCard onActivated={refresh} />
+
         <div className="mt-12 text-center">
           <Link to="/donation">
             <Button variant="outline" size="lg" className="gap-2">
