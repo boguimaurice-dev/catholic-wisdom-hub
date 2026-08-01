@@ -89,10 +89,10 @@ const copy: Record<Language, Record<string, string>> = {
 const AMOUNTS = [500, 1000, 2000, 5000, 10000];
 
 const OPERATORS = [
-  { name: "Wave", color: "bg-[#1DC1FA]/15 text-[#0a7ea4] dark:text-[#5cd0f7]" },
-  { name: "Orange Money", color: "bg-[#FF7900]/15 text-[#b35500] dark:text-[#ffa14d]" },
-  { name: "MTN MoMo", color: "bg-[#FFCC00]/20 text-[#8a6d00] dark:text-[#ffdd55]" },
-  { name: "Moov Money", color: "bg-[#00A0E3]/15 text-[#00648f] dark:text-[#5bc4f0]" },
+  { name: "Wave", color: "bg-[#1DC1FA]/15 text-[#0a7ea4] dark:text-[#5cd0f7]", ring: "ring-[#1DC1FA]" },
+  { name: "Orange Money", color: "bg-[#FF7900]/15 text-[#b35500] dark:text-[#ffa14d]", ring: "ring-[#FF7900]" },
+  { name: "MTN MoMo", color: "bg-[#FFCC00]/20 text-[#8a6d00] dark:text-[#ffdd55]", ring: "ring-[#FFCC00]" },
+  { name: "Moov Money", color: "bg-[#00A0E3]/15 text-[#00648f] dark:text-[#5bc4f0]", ring: "ring-[#00A0E3]" },
 ];
 
 const TRANSFER_DETAILS = "Monastère Sainte Marie de Bouaké — benedictinsbouake.com";
@@ -104,6 +104,7 @@ export function DonationDialog({ children }: { children: ReactNode }) {
   const [customAmount, setCustomAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [operator, setOperator] = useState<string | null>(null);
 
   const finalAmount = amount ?? (customAmount ? parseInt(customAmount, 10) : 0);
 
@@ -163,8 +164,11 @@ export function DonationDialog({ children }: { children: ReactNode }) {
             {AMOUNTS.map((a) => (
               <Button
                 key={a}
+                type="button"
                 size="sm"
                 variant={amount === a ? "default" : "outline"}
+                aria-pressed={amount === a}
+                className={amount === a ? "ring-2 ring-accent ring-offset-1 ring-offset-background" : ""}
                 onClick={() => {
                   setAmount(a);
                   setCustomAmount("");
@@ -195,12 +199,20 @@ export function DonationDialog({ children }: { children: ReactNode }) {
           <p className="text-xs text-muted-foreground mt-1">{c.momoDesc}</p>
           <div className="flex flex-wrap gap-2 mt-3">
             {OPERATORS.map((op) => (
-              <span
+              <button
                 key={op.name}
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${op.color}`}
+                type="button"
+                translate="no"
+                aria-pressed={operator === op.name}
+                onClick={() => setOperator(operator === op.name ? null : op.name)}
+                className={`notranslate text-xs font-semibold px-2.5 py-1 rounded-full transition-all ${op.color} ${
+                  operator === op.name
+                    ? `ring-2 ring-offset-1 ring-offset-background ${op.ring} scale-105`
+                    : "opacity-80 hover:opacity-100"
+                }`}
               >
                 {op.name}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -219,15 +231,21 @@ export function DonationDialog({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <Button onClick={handleDonate} disabled={processing || !finalAmount} className="w-full">
+        <Button
+          onClick={handleDonate}
+          disabled={processing || !finalAmount}
+          className="w-full h-auto min-h-11 py-2.5 whitespace-normal text-center leading-snug"
+        >
           {processing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <Heart className="h-4 w-4 mr-2" />
-              {c.donate}
-              {finalAmount ? ` — ${finalAmount.toLocaleString("fr-FR")} XOF` : ""}
-            </>
+            <span className="inline-flex items-center justify-center gap-2 flex-wrap">
+              <Heart className="h-4 w-4 shrink-0" />
+              <span>
+                {c.donate}
+                {finalAmount ? ` — ${finalAmount.toLocaleString("fr-FR")} XOF` : ""}
+              </span>
+            </span>
           )}
         </Button>
 
