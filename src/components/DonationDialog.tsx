@@ -89,10 +89,10 @@ const copy: Record<Language, Record<string, string>> = {
 const AMOUNTS = [500, 1000, 2000, 5000, 10000];
 
 const OPERATORS = [
-  { name: "Wave", color: "bg-[#1DC1FA]/15 text-[#0a7ea4] dark:text-[#5cd0f7]" },
-  { name: "Orange Money", color: "bg-[#FF7900]/15 text-[#b35500] dark:text-[#ffa14d]" },
-  { name: "MTN MoMo", color: "bg-[#FFCC00]/20 text-[#8a6d00] dark:text-[#ffdd55]" },
-  { name: "Moov Money", color: "bg-[#00A0E3]/15 text-[#00648f] dark:text-[#5bc4f0]" },
+  { name: "Wave", color: "bg-[#1DC1FA]/15 text-[#0a7ea4] dark:text-[#5cd0f7]", ring: "ring-[#1DC1FA]" },
+  { name: "Orange Money", color: "bg-[#FF7900]/15 text-[#b35500] dark:text-[#ffa14d]", ring: "ring-[#FF7900]" },
+  { name: "MTN MoMo", color: "bg-[#FFCC00]/20 text-[#8a6d00] dark:text-[#ffdd55]", ring: "ring-[#FFCC00]" },
+  { name: "Moov Money", color: "bg-[#00A0E3]/15 text-[#00648f] dark:text-[#5bc4f0]", ring: "ring-[#00A0E3]" },
 ];
 
 const TRANSFER_DETAILS = "Monastère Sainte Marie de Bouaké — benedictinsbouake.com";
@@ -104,6 +104,7 @@ export function DonationDialog({ children }: { children: ReactNode }) {
   const [customAmount, setCustomAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [operator, setOperator] = useState<string | null>(null);
 
   const finalAmount = amount ?? (customAmount ? parseInt(customAmount, 10) : 0);
 
