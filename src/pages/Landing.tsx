@@ -52,7 +52,9 @@ export default function Landing() {
             <p className="mt-8 text-sm text-muted-foreground/80 max-w-xl mx-auto">
               {t("landing.pricingInstitutionalPre")}
               <a
-                href="mailto:scriptorium@mbbm.tech?subject=Demande%20d%27offre%20institutionnelle%20-%20Scriptorium"
+                href="mailto:scriptorium@mbbm.tech?subject=Demande d'offre institutionnelle - Scriptorium"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-secondary underline underline-offset-4 decoration-secondary/50 hover:decoration-secondary transition-colors"
               >
                 {t("landing.pricingInstitutionalLink")}
