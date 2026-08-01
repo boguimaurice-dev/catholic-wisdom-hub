@@ -445,6 +445,13 @@ export default function SuperAdmin() {
               </Card>
             </TabsContent>
 
+            {/* INSTITUTION CODES */}
+            <TabsContent value="codes">
+              <InstitutionCodesAdmin />
+            </TabsContent>
+
+
+
             {/* SECURITY */}
             <TabsContent value="security" className="space-y-4">
               <Card>
