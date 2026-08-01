@@ -245,6 +245,7 @@ export default function SuperAdmin() {
                 <TabsTrigger value="security"><Shield className="h-4 w-4 mr-1" />Sécurité</TabsTrigger>
                 <TabsTrigger value="performance"><Server className="h-4 w-4 mr-1" />Performance</TabsTrigger>
                 <TabsTrigger value="database"><Database className="h-4 w-4 mr-1" />Base de données</TabsTrigger>
+                <TabsTrigger value="codes"><Shield className="h-4 w-4 mr-1" />Codes institutionnels</TabsTrigger>
               </TabsList>
             </ScrollArea>
 
