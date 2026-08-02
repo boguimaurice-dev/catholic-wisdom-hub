@@ -688,7 +688,7 @@ const translations: Record<Language, Record<string, any>> = {
       q2: "As respostas são confiáveis?",
       a2: "As respostas são baseadas em fontes do Magistério, Padres da Igreja e Tradição. No entanto, não substituem a orientação de um padre.",
       q3: "Como funciona a consulta de especialistas?",
-      a3: "Ao fazer uma pergunta, um orquestrador analisa seu pedido e seleciona os especialistas mais relevantes para produzir uma síntese harmoniosa.",
+      a3: "Duas possibilidades: por padrão, o Orquestrador analisa seu pedido, seleciona automaticamente as cátedras mais relevantes e detalha a contribuição de cada uma no final da resposta. Você também pode clicar diretamente em um dos 8 especialistas para iniciar uma consulta direta e específica ao seu domínio (clique novamente para voltar ao modo automático).",
       q4: "Posso usar a função de voz?",
       a4: "Sim! Clique no ícone do microfone para ditar sua pergunta. Você também pode ouvir as respostas.",
       q5: "Meu histórico é salvo?",
