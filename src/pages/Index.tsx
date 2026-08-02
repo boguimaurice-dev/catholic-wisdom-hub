@@ -11,7 +11,7 @@ import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { FAQ } from "@/components/FAQ";
 import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
-import { Message } from "@/types/consultation";
+import { Message, EXPERTS_CONFIG } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
@@ -38,6 +38,7 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeExperts, setActiveExperts] = useState<string[]>([]);
   const [consultedExperts, setConsultedExperts] = useState<string[]>([]);
+  const [selectedExpert, setSelectedExpert] = useState<string | null>(null);
   const [currentPhase, setCurrentPhase] = useState<string>("");
   const [level, setLevel] = useState<ConsultationLevel>(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("consultation_level") : null;
@@ -112,7 +113,7 @@ export default function Index() {
       setCurrentPhase(t("index.analyzePhase"));
       setTimeout(() => setCurrentPhase(t("index.selectPhase")), 1000);
 
-      const result = await consultOrchestrator(question, messages, level, filters);
+      const result = await consultOrchestrator(question, messages, level, filters, selectedExpert);
 
       if (result.success) {
         const expertKeys = result.analysis.selectedExperts.map((e) => e.key);
@@ -280,7 +281,12 @@ export default function Index() {
       {/* Agents Grid */}
       <div className="bg-cream border-b border-border py-3 px-4">
         <div className="max-w-6xl mx-auto">
-          <AgentsGrid activeExperts={activeExperts} consultedExperts={consultedExperts} />
+          <AgentsGrid
+            activeExperts={activeExperts}
+            consultedExperts={consultedExperts}
+            selectedExpert={selectedExpert}
+            onSelectExpert={(key) => setSelectedExpert((prev) => (prev === key ? null : key))}
+          />
         </div>
       </div>
 
@@ -307,8 +313,8 @@ export default function Index() {
                   {t("index.welcome")}
                 </h2>
                 <div className="ornament" />
-                <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4 leading-relaxed">
-                  {t("index.welcomeDesc")} <span className="text-secondary font-semibold">{t("index.experts")}</span> {t("index.welcomeDesc2")}
+                <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base px-4 leading-relaxed">
+                  {t("index.welcomeFull")}
                 </p>
               </motion.div>
 
@@ -407,7 +413,13 @@ export default function Index() {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
+              placeholder={
+                isListening
+                  ? `🎙️ ${t("index.speaking")}`
+                  : selectedExpert
+                    ? t("index.placeholderExpert").replace("{name}", EXPERTS_CONFIG[selectedExpert]?.name || "")
+                    : t("index.placeholder")
+              }
               className="flex-1 min-h-[56px] max-h-40 resize-none text-base sm:text-lg leading-relaxed bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
