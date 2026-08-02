@@ -187,7 +187,7 @@ const translations: Record<Language, Record<string, any>> = {
       q2: "Les réponses sont-elles fiables ?",
       a2: "Les réponses s'appuient sur les sources du Magistère, des Pères de l'Église et de la Tradition. Cependant, elles ne remplacent pas l'accompagnement d'un prêtre ou d'un directeur spirituel.",
       q3: "Comment fonctionne la consultation des experts ?",
-      a3: "Lorsque vous posez une question, un orchestrateur analyse votre demande et sélectionne les experts les plus pertinents. Chacun apporte sa contribution spécialisée, puis une synthèse harmonieuse est produite.",
+      a3: "Deux possibilités : par défaut, l'Orchestrateur analyse votre demande, sélectionne automatiquement les chaires les plus pertinentes et détaille la contribution de chaque intervenant en fin de réponse. Vous pouvez aussi cliquer directement sur l'un des 8 experts pour lancer une consultation directe, approfondie et spécifique à son domaine (un nouveau clic revient au mode automatique).",
       q4: "Puis-je utiliser la fonctionnalité vocale ?",
       a4: "Oui ! Cliquez sur l'icône de microphone pour dicter votre question. Vous pouvez aussi écouter les réponses en cliquant sur l'icône de haut-parleur.",
       q5: "Mon historique est-il sauvegardé ?",
