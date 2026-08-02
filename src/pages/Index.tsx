@@ -211,15 +211,23 @@ export default function Index() {
             </div>
             <div className="flex items-center gap-2">
               {currentPlan && (
-                <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-2.5 py-1 rounded-full border border-primary-foreground/20">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span className="font-medium">
-                    {currentPlan.max_consultations_per_day >= 999
-                      ? "∞"
-                      : `${remainingConsultations()}/${currentPlan.max_consultations_per_day}`}
-                  </span>
-                </div>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-3 py-1 rounded-full border border-secondary/40 shadow-sm cursor-default">
+                        <BookOpen className="w-3.5 h-3.5 text-secondary" />
+                        <span className="font-medium tabular-nums">
+                          {currentPlan.max_consultations_per_day >= 999
+                            ? "∞"
+                            : `${remainingConsultations()}/${currentPlan.max_consultations_per_day}`}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Consultations restantes pour aujourd'hui</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
+
               <Link to="/liturgy">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <BookMarked className="w-4 h-4" />
