@@ -406,20 +406,7 @@ export default function Index() {
       {/* Input Area */}
       <div className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4 transition-[padding] duration-300 ${panelPad}`}>
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <SearchFilters filters={filters} onChange={setFilters} />
-          <div className="flex gap-2 sm:gap-3 items-end">
-
-            <Button
-              type="button"
-              variant={isListening ? "destructive" : "secondary"}
-              onClick={handleVoiceInput}
-              disabled={isLoading}
-              className={`h-11 shrink-0 gap-2 px-3 ${isListening ? "animate-pulse" : ""}`}
-              title={isListening ? t("index.stop") : t("index.vocal")}
-            >
-              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              <span className="hidden sm:inline text-sm font-medium">{isListening ? t("index.stop") : t("index.vocal")}</span>
-            </Button>
+          <div className="relative rounded-2xl border border-border bg-card shadow-md focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -430,7 +417,7 @@ export default function Index() {
                     ? t("index.placeholderExpert").replace("{name}", EXPERTS_CONFIG[selectedExpert]?.name || "")
                     : t("index.placeholder")
               }
-              className="flex-1 min-h-[56px] max-h-40 resize-none text-base sm:text-lg leading-relaxed bg-card border-border focus:border-secondary focus:ring-secondary/30"
+              className="min-h-[56px] max-h-40 resize-none text-base sm:text-lg leading-relaxed bg-transparent border-0 shadow-none focus-visible:ring-0 pr-14 pb-11"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -439,10 +426,33 @@ export default function Index() {
               }}
               disabled={isLoading}
             />
-            <Button type="submit" disabled={isLoading || !input.trim()} className="h-11 px-4 sm:px-5 shadow-md">
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            <div className="absolute left-2 bottom-2 flex items-center gap-1">
+              <SearchFilters filters={filters} onChange={setFilters} compact />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleVoiceInput}
+                disabled={isLoading}
+                className={`h-8 w-8 p-0 rounded-full hover:bg-secondary/10 ${
+                  isListening ? "text-destructive animate-pulse" : "text-muted-foreground hover:text-secondary"
+                }`}
+                title={isListening ? t("index.stop") : t("index.vocal")}
+                aria-label={isListening ? t("index.stop") : t("index.vocal")}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+            </div>
+            <Button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="absolute right-2 bottom-2 h-9 w-9 p-0 rounded-full shadow-md"
+              aria-label="Envoyer"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
+
         </form>
       </div>
 
