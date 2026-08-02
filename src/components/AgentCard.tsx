@@ -5,25 +5,39 @@ interface AgentCardProps {
   expertKey: string;
   isActive?: boolean;
   isConsulted?: boolean;
+  isSelected?: boolean;
+  isDimmed?: boolean;
+  onSelect?: (key: string) => void;
 }
 
-export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) {
+export function AgentCard({ expertKey, isActive, isConsulted, isSelected, isDimmed, onSelect }: AgentCardProps) {
   const expert = EXPERTS_CONFIG[expertKey];
   if (!expert) return null;
 
   return (
-    <motion.div
+    <motion.button
+      type="button"
+      onClick={() => onSelect?.(expertKey)}
+      aria-pressed={!!isSelected}
+      title={`${expert.name} — ${expert.title}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{
-        opacity: 1,
-        scale: isActive ? 1.03 : 1,
+        opacity: isDimmed ? 0.5 : 1,
+        scale: isSelected ? 1.05 : isActive ? 1.03 : 1,
       }}
       transition={{ duration: 0.25 }}
       className={`
-        relative p-2.5 sm:p-3 rounded-lg border transition-all duration-300
+        relative w-full text-left p-2.5 sm:p-3 rounded-lg border transition-all duration-300
+        cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary
         ${expert.color}
-        ${isActive ? "ring-2 ring-offset-1 ring-secondary shadow-md" : "shadow-sm"}
-        ${isConsulted && !isActive ? "opacity-80" : ""}
+        ${
+          isSelected
+            ? "ring-2 ring-secondary border-secondary shadow-[0_0_18px_hsl(var(--secondary)/0.55)]"
+            : isActive
+              ? "ring-2 ring-offset-1 ring-secondary shadow-md"
+              : "shadow-sm"
+        }
+        ${isConsulted && !isActive && !isSelected ? "opacity-80" : ""}
       `}
     >
       <div className="flex flex-col items-center text-center gap-1">
@@ -49,16 +63,20 @@ export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) 
           <span className="text-white text-[8px]">✓</span>
         </motion.div>
       )}
-    </motion.div>
+    </motion.button>
   );
 }
 
 export function AgentsGrid({
   activeExperts = [],
   consultedExperts = [],
+  selectedExpert = null,
+  onSelectExpert,
 }: {
   activeExperts?: string[];
   consultedExperts?: string[];
+  selectedExpert?: string | null;
+  onSelectExpert?: (key: string) => void;
 }) {
   const expertKeys = Object.keys(EXPERTS_CONFIG);
 
@@ -70,6 +88,9 @@ export function AgentsGrid({
           expertKey={key}
           isActive={activeExperts.includes(key)}
           isConsulted={consultedExperts.includes(key)}
+          isSelected={selectedExpert === key}
+          isDimmed={!!selectedExpert && selectedExpert !== key}
+          onSelect={onSelectExpert}
         />
       ))}
     </div>
