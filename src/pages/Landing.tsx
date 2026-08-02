@@ -9,6 +9,7 @@ import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { prefetchWeek } from "@/lib/liturgyCache";
+import { Seo } from "@/components/Seo";
 
 export default function Landing() {
   const { t, language } = useLanguage();
@@ -26,6 +27,11 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Scriptorium — Assistant de recherche théologique catholique"
+        description="Explorez la Bible, le Catéchisme et la Patristique avec Scriptorium, l'assistant IA fidèle au Magistère et ses 8 chaires théologiques virtuelles."
+        path="/"
+      />
       <LandingHeader />
       <LandingHero />
       <LandingFeatures />

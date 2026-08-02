@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -262,6 +263,19 @@ export default function Liturgy() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Liturgie du jour — Scriptorium"
+        description="Lisez les textes liturgiques du jour (première lecture, psaume, évangile) et recevez une méditation homilétique catholique approfondie."
+        path="/liturgy"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: "Liturgie du jour — textes et méditation homilétique",
+          datePublished: new Date().toISOString().slice(0, 10),
+          inLanguage: "fr",
+          author: { "@type": "Organization", name: "Scriptorium" },
+        }}
+      />
       <header className="sticky top-0 z-40 bg-primary text-primary-foreground py-3 px-4 shadow-md">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
