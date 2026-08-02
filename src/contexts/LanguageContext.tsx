@@ -332,6 +332,7 @@ const translations: Record<Language, Record<string, any>> = {
       consultPhase: "Consulting {count} expert(s)…",
       synthesisPhase: "Synthesis in progress…",
       placeholder: "Ask your question about the Catholic faith…",
+      placeholderExpert: "Ask your question specifically to {name} (Direct Mode)…",
       speaking: "Speak now…",
       limitReached: "You have reached the limit of {limit} consultations/day. Upgrade to a higher plan!",
       listen: "Listen",
