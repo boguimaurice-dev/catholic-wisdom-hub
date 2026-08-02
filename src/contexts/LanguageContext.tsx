@@ -160,6 +160,7 @@ const translations: Record<Language, Record<string, any>> = {
       welcomeDesc: "Explorez la richesse de la foi catholique avec nos",
       experts: "8 experts",
       welcomeDesc2: "à votre service.",
+      welcomeFull: "Posez votre question globale à notre Orchestrateur, qui consultera automatiquement les chaires les plus adaptées et détaillera la contribution de chaque intervenant en fin de réponse. Vous pouvez aussi cliquer directement sur l'un de nos 8 experts pour lancer une consultation directe, approfondie et spécifique à son domaine.",
       analyzePhase: "Analyse de la question par l'Orchestrateur assistant en chef…",
       selectPhase: "Sélection des experts pertinents…",
       consultPhase: "Consultation de {count} expert(s)…",
