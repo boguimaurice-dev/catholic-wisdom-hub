@@ -129,12 +129,12 @@ export function SearchFilters({ filters, onChange, compact }: Props) {
         </PopoverContent>
       </Popover>
 
-      {allLabels.map((label) => (
+      {!compact && allLabels.map((label) => (
         <Badge key={label} variant="outline" className="text-[10px] gap-1 border-secondary/40">
           {label}
         </Badge>
       ))}
-      {count > 0 && (
+      {!compact && count > 0 && (
         <Button
           type="button"
           variant="ghost"
@@ -146,6 +146,7 @@ export function SearchFilters({ filters, onChange, compact }: Props) {
           <X className="w-3.5 h-3.5" />
         </Button>
       )}
+
     </div>
   );
 }
