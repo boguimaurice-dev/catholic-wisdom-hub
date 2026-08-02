@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +77,12 @@ export default function History() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Historique des consultations — Scriptorium"
+        description="Retrouvez l'ensemble de vos consultations théologiques passées et téléchargez vos documents de recherche."
+        path="/history"
+        noindex
+      />
       <header className="bg-primary text-primary-foreground py-4 px-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">

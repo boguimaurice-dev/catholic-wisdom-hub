@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
@@ -182,6 +183,12 @@ export default function Index() {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col relative transition-[padding] duration-300 ${panelPad}`}>
+      <Seo
+        title="Consultation théologique — Scriptorium"
+        description="Posez vos questions de foi à l'Orchestrateur Scriptorium et à ses 8 chaires théologiques catholiques : Écriture, Catéchisme, patristique et Magistère."
+        path="/app"
+        noindex
+      />
       {/* Decorative background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{
@@ -205,6 +212,7 @@ export default function Index() {
               <div>
                 <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-wide">
                   {t("header.title")}
+                  <span className="sr-only"> — Consultation théologique catholique</span>
                 </h1>
                 <p className="text-xs sm:text-sm opacity-80 hidden sm:block font-light">
                   {t("header.subtitle")}
@@ -255,7 +263,7 @@ export default function Index() {
                 </Button>
               </Link>
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={resetConversation} className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" onClick={resetConversation} aria-label="Réinitialiser la conversation" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
@@ -266,7 +274,7 @@ export default function Index() {
               </div>
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="sm" onClick={signOut} aria-label="Se déconnecter" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>

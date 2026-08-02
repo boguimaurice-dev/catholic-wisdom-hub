@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Seo
+        title="Connexion et inscription — Scriptorium"
+        description="Connectez-vous à Scriptorium ou créez un compte gratuit pour consulter les 8 chaires théologiques catholiques."
+        path="/auth"
+      />
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">

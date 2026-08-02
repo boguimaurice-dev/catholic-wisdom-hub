@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart, RefreshCw, Smartphone, CreditCard, Send, Bell, ShieldCheck, XCircle, Clock } from "lucide-react";
@@ -192,6 +193,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Tarifs et abonnements — Scriptorium"
+        description="Découvrez les formules Basique, Premium et Élite de Scriptorium, ainsi que les accès institutionnels pour paroisses, séminaires et communautés."
+        path="/pricing"
+      />
       <header className="bg-primary text-primary-foreground py-4 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
