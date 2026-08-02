@@ -133,7 +133,7 @@ export default function Donation() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="icon" aria-label="Retour à l'accueil" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>

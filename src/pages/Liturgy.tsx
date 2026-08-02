@@ -266,7 +266,7 @@ export default function Liturgy() {
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <Link to="/">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="sm" aria-label="Retour à l'accueil" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
