@@ -29,7 +29,9 @@ export const SOURCE_TYPES: Array<{ key: string; label: string }> = [
 interface Props {
   filters: ResearchFilters;
   onChange: (filters: ResearchFilters) => void;
+  compact?: boolean;
 }
+
 
 export function SearchFilters({ filters, onChange }: Props) {
   const count = filters.periods.length + filters.sources.length;
