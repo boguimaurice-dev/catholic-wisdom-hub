@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles, Globe, ExternalLink } from "lucide-react";
@@ -129,6 +130,11 @@ export default function Donation() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Faire un don — Scriptorium"
+        description="Soutenez Scriptorium et le Monastère Sainte Marie de Bouaké par un don sécurisé en Mobile Money ou par carte bancaire."
+        path="/donation"
+      />
       <header className="bg-primary text-primary-foreground py-4 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">

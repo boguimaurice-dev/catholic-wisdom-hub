@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
@@ -182,6 +183,12 @@ export default function Index() {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col relative transition-[padding] duration-300 ${panelPad}`}>
+      <Seo
+        title="Consultation théologique — Scriptorium"
+        description="Posez vos questions de foi à l'Orchestrateur Scriptorium et à ses 8 chaires théologiques catholiques : Écriture, Catéchisme, patristique et Magistère."
+        path="/app"
+        noindex
+      />
       {/* Decorative background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{

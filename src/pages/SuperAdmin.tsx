@@ -1,3 +1,4 @@
+import { Seo } from "@/components/Seo";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,6 +197,12 @@ export default function SuperAdmin() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Administration — Scriptorium"
+        description="Tableau de bord d'administration interne de Scriptorium."
+        path="/superadmin"
+        noindex
+      />
       <header className="border-b bg-card/50 backdrop-blur sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
