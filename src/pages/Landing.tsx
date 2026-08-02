@@ -31,6 +31,15 @@ export default function Landing() {
         title="Scriptorium — Assistant de recherche théologique catholique"
         description="Explorez la Bible, le Catéchisme et la Patristique avec Scriptorium, l'assistant IA fidèle au Magistère et ses 8 chaires théologiques virtuelles."
         path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: ["q1", "q2", "q3", "q4", "q5"].map((k) => ({
+            "@type": "Question",
+            name: t(`faq.${k}`),
+            acceptedAnswer: { "@type": "Answer", text: t(`faq.a${k.slice(1)}`) },
+          })),
+        }}
       />
       <LandingHeader />
       <LandingHero />
