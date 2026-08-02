@@ -14,7 +14,8 @@ export async function consultOrchestrator(
   question: string,
   conversationHistory: Message[] = [],
   level: ConsultationLevel = "grand_public",
-  filters: ResearchFiltersPayload = { periods: [], sources: [] }
+  filters: ResearchFiltersPayload = { periods: [], sources: [] },
+  expertKey: string | null = null
 ): Promise<ConsultationResult> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -29,6 +30,7 @@ export async function consultOrchestrator(
       question,
       level,
       filters,
+      expertKey,
       conversationHistory: conversationHistory.map((m) => ({
         role: m.role,
         content: m.content,

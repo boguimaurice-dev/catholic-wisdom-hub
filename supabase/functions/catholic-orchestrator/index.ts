@@ -240,7 +240,7 @@ serve(async (req) => {
       }, 403);
     }
 
-    const { question, conversationHistory = [], level = "grand_public", filters = { periods: [], sources: [] } } = await req.json();
+    const { question, conversationHistory = [], level = "grand_public", filters = { periods: [], sources: [] }, expertKey = null } = await req.json();
 
     if (!question) {
       return jsonResponse({ error: "Question requise" }, 400);
@@ -279,6 +279,9 @@ serve(async (req) => {
     const levelInstruction = (LEVEL_INSTRUCTIONS[level] || LEVEL_INSTRUCTIONS.grand_public) + filterInstruction;
 
 
+    // Mode Consultation Directe: un seul expert imposé par l'utilisateur
+    const directExpertKey = typeof expertKey === "string" && expertKey in EXPERTS ? expertKey : null;
+
     // Phase 1: Analyse par l'Orchestrateur
     const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
 
@@ -301,7 +304,8 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme:
 
 Question: ${question}`;
 
-    const analyseResponse = await callLovableAI([
+    let analyseResponse = "";
+    if (!directExpertKey) analyseResponse = await callLovableAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
     ], "google/gemini-3-flash-preview");
@@ -309,7 +313,10 @@ Question: ${question}`;
     let selectedExperts: string[] = [];
     let analyseRaison = "";
 
-    try {
+    if (directExpertKey) {
+      selectedExperts = [directExpertKey];
+      analyseRaison = `Consultation directe demandée auprès de ${EXPERTS[directExpertKey as keyof typeof EXPERTS].name} (${EXPERTS[directExpertKey as keyof typeof EXPERTS].title}).`;
+    } else try {
       const jsonMatch = analyseResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -331,8 +338,11 @@ Question: ${question}`;
       const expert = EXPERTS[expertKey as keyof typeof EXPERTS];
       if (!expert) return null;
 
+      const directInstruction = directExpertKey
+        ? `\n\nMODE CONSULTATION DIRECTE: l'utilisateur t'a choisi personnellement. Réponds EXCLUSIVEMENT avec ta casquette, ton style et ton domaine d'expertise hyper-spécialisé de ${expert.title} (${expert.name}). Ne parle pas au nom des autres experts et n'aborde les autres disciplines que si elles servent directement ton champ propre. Développe en profondeur, avec tes sources de prédilection.`
+        : "";
       const expertResponse = await callLovableAI([
-        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}` },
+        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}${directInstruction}` },
         ...contextMessages,
         { role: "user", content: question }
       ], "google/gemini-3-flash-preview");
@@ -348,7 +358,11 @@ Question: ${question}`;
     const expertResponses = (await Promise.all(expertPromises)).filter(Boolean) as { expert: string; name: string; title: string; response: string }[];
 
     // Phase 3: Synthèse par l'Orchestrateur
-    const synthesePrompt = `Tu es l'orchestreur assistant en chef. Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts.
+    const directSynthesisHeader = directExpertKey
+      ? `Tu es ${EXPERTS[directExpertKey as keyof typeof EXPERTS].name}, ${EXPERTS[directExpertKey as keyof typeof EXPERTS].title}. L'utilisateur t'a consulté DIRECTEMENT: rédige la réponse finale à la première personne, exclusivement selon ta casquette, ton style et ton domaine hyper-spécialisé, sans mentionner d'autres experts ni d'orchestration.`
+      : `Tu es l'orchestreur assistant en chef.`;
+
+    const synthesePrompt = `${directSynthesisHeader} ${directExpertKey ? "Structure et approfondis ta réponse ci-dessous." : "Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts."}
 
 ${levelInstruction}
 
