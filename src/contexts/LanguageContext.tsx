@@ -666,6 +666,7 @@ const translations: Record<Language, Record<string, any>> = {
       consultPhase: "Consultando {count} especialista(s)…",
       synthesisPhase: "Síntese em andamento…",
       placeholder: "Faça sua pergunta sobre a fé católica…",
+      placeholderExpert: "Faça sua pergunta específica a {name} (Modo Direto)…",
       speaking: "Fale agora…",
       limitReached: "Você atingiu o limite de {limit} consultas/dia. Mude para um plano superior!",
       listen: "Ouvir",
