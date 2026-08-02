@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2, Bot } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -116,7 +116,7 @@ export function Chatbot() {
               size="icon"
               className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
             >
-              <MessageCircle className="w-6 h-6" />
+              <HelpCircle className="w-6 h-6" />
             </Button>
           </motion.div>
         )}
