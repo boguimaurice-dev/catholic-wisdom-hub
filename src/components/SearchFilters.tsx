@@ -33,7 +33,7 @@ interface Props {
 }
 
 
-export function SearchFilters({ filters, onChange }: Props) {
+export function SearchFilters({ filters, onChange, compact }: Props) {
   const count = filters.periods.length + filters.sources.length;
 
   const toggle = (group: keyof ResearchFilters, key: string) => {
@@ -50,24 +50,37 @@ export function SearchFilters({ filters, onChange }: Props) {
   ] as string[];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap mb-2">
+    <div className={compact ? "flex items-center" : "flex items-center gap-2 flex-wrap mb-2"}>
       <Popover>
         <PopoverTrigger asChild>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="gap-1.5 h-8 border-secondary/40 hover:border-secondary hover:bg-secondary/10"
+            className={
+              compact
+                ? "relative h-8 w-8 p-0 rounded-full text-muted-foreground hover:text-secondary hover:bg-secondary/10"
+                : "gap-1.5 h-8 border border-secondary/40 hover:border-secondary hover:bg-secondary/10"
+            }
             title="Filtres de recherche avancés"
+            aria-label="Filtres de recherche avancés"
           >
             <Filter className="w-4 h-4 text-secondary" />
-            <span className="text-xs font-medium">Filtres</span>
+            {!compact && <span className="text-xs font-medium">Filtres</span>}
             {count > 0 && (
-              <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-[10px]">
+              <Badge
+                variant="secondary"
+                className={
+                  compact
+                    ? "absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 text-[9px] justify-center"
+                    : "ml-0.5 h-4 px-1.5 text-[10px]"
+                }
+              >
                 {count}
               </Badge>
             )}
           </Button>
+
         </PopoverTrigger>
         <PopoverContent align="start" className="w-72 p-4 space-y-4">
           <div>
