@@ -26,6 +26,8 @@ import { QuillButton } from "@/components/QuillButton";
 import { useScriptorium } from "@/hooks/useScriptorium";
 import { LevelSelector, LEVELS } from "@/components/LevelSelector";
 import { SearchFilters, type ResearchFilters } from "@/components/SearchFilters";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 import type { ConsultationLevel } from "@/services/orchestrator";
 
