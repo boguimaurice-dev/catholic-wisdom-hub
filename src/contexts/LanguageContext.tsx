@@ -354,7 +354,7 @@ const translations: Record<Language, Record<string, any>> = {
       q2: "Are the answers reliable?",
       a2: "The answers are based on Magisterium sources, Church Fathers and Tradition. However, they do not replace guidance from a priest or spiritual director.",
       q3: "How does the expert consultation work?",
-      a3: "When you ask a question, an orchestrator analyzes your request and selects the most relevant experts. Each provides their specialized contribution, then a harmonious synthesis is produced.",
+      a3: "Two options: by default, the Orchestrator analyzes your request, automatically selects the most relevant chairs and details each contributor's input at the end of the answer. You can also click directly on one of the 8 experts to launch a direct, in-depth consultation specific to their field (click again to return to automatic mode).",
       q4: "Can I use the voice feature?",
       a4: "Yes! Click the microphone icon to dictate your question. You can also listen to answers by clicking the speaker icon.",
       q5: "Is my history saved?",
