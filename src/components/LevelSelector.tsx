@@ -18,23 +18,24 @@ export const LEVELS: Array<{
 }> = [
   {
     key: "grand_public",
-    label: "Grand public",
+    label: "Grand Public / Catéchèse",
     description: "Réponse simple et accessible, vocabulaire courant",
     icon: Users,
   },
   {
     key: "catechiste",
-    label: "Catéchiste",
-    description: "Pédagogique, cite le Catéchisme et les Écritures",
+    label: "Pastoral & Homilétique",
+    description: "Pédagogique et pastoral, cite le Catéchisme et les Écritures",
     icon: BookOpen,
   },
   {
     key: "universitaire",
-    label: "Universitaire",
+    label: "Universitaire & Sources primaires",
     description: "Théologique et académique, sources primaires",
     icon: GraduationCap,
   },
 ];
+
 
 interface Props {
   level: ConsultationLevel;
