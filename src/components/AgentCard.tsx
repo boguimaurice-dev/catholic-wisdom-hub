@@ -1,3 +1,4 @@
+import { forwardRef, useRef } from "react";
 import { motion } from "framer-motion";
 import { EXPERTS_CONFIG } from "@/types/consultation";
 
@@ -7,12 +8,26 @@ interface AgentCardProps {
   isConsulted?: boolean;
   isSelected?: boolean;
   isDimmed?: boolean;
+  tabIndex?: number;
   onSelect?: (key: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
-export function AgentCard({ expertKey, isActive, isConsulted, isSelected, isDimmed, onSelect }: AgentCardProps) {
+export const AgentCard = forwardRef<HTMLButtonElement, AgentCardProps>(function AgentCard(
+  { expertKey, isActive, isConsulted, isSelected, isDimmed, tabIndex, onSelect, onKeyDown },
+  ref,
+) {
   const expert = EXPERTS_CONFIG[expertKey];
   if (!expert) return null;
+
+  const statusLabel = isSelected
+    ? "sélectionné, consultation directe active"
+    : isActive
+      ? "en cours de consultation"
+      : isConsulted
+        ? "déjà consulté"
+        : "non sélectionné";
+
 
   return (
     <motion.button
