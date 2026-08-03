@@ -415,9 +415,15 @@ export default function Index() {
       <div className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4 transition-[padding] duration-300 ${panelPad}`}>
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="relative rounded-2xl border border-border bg-card shadow-md focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition">
+            <label htmlFor="question-input" className="sr-only">
+              Votre question théologique
+            </label>
             <Textarea
+              id="question-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              aria-label="Votre question théologique"
+              aria-describedby="input-hint"
               placeholder={
                 isListening
                   ? `🎙️ ${t("index.speaking")}`
@@ -434,7 +440,14 @@ export default function Index() {
               }}
               disabled={isLoading}
             />
-            <div className="absolute left-2 bottom-2 flex items-center gap-1">
+            <p id="input-hint" className="sr-only">
+              Appuyez sur Entrée pour envoyer, Maj + Entrée pour aller à la ligne.
+            </p>
+            <div
+              className="absolute left-2 bottom-2 flex items-center gap-1"
+              role="group"
+              aria-label="Outils de saisie : filtres de recherche et dictée vocale"
+            >
               <SearchFilters filters={filters} onChange={setFilters} compact />
               <Button
                 type="button"
@@ -442,24 +455,26 @@ export default function Index() {
                 size="sm"
                 onClick={handleVoiceInput}
                 disabled={isLoading}
-                className={`h-8 w-8 p-0 rounded-full hover:bg-secondary/10 ${
+                aria-pressed={isListening}
+                className={`h-8 w-8 p-0 rounded-full hover:bg-secondary/10 focus-visible:ring-2 focus-visible:ring-secondary ${
                   isListening ? "text-destructive animate-pulse" : "text-muted-foreground hover:text-secondary"
                 }`}
                 title={isListening ? t("index.stop") : t("index.vocal")}
-                aria-label={isListening ? t("index.stop") : t("index.vocal")}
+                aria-label={isListening ? `${t("index.stop")} la dictée vocale` : `${t("index.vocal")} : dicter votre question`}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
               </Button>
             </div>
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 bottom-2 h-9 w-9 p-0 rounded-full shadow-md"
-              aria-label="Envoyer"
+              className="absolute right-2 bottom-2 h-9 w-9 p-0 rounded-full shadow-md focus-visible:ring-2 focus-visible:ring-secondary"
+              aria-label={isLoading ? "Envoi de la question en cours" : "Envoyer la question"}
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Send className="w-4 h-4" aria-hidden="true" />}
             </Button>
           </div>
+
 
         </form>
       </div>
