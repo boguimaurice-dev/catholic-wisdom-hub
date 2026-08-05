@@ -61,8 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // scope "local" : ne déconnecte que cet appareil, pas les autres
+    await supabase.auth.signOut({ scope: "local" });
   };
+
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signOut }}>
