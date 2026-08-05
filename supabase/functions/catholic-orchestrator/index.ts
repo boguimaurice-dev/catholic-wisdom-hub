@@ -464,7 +464,15 @@ Format ta réponse en markdown, puis termine impérativement par le bloc \`\`\`s
         reason: analyseRaison
       },
       expertContributions: expertResponses,
-      synthesis: syntheseResponse
+      synthesis: syntheseResponse,
+      retrievedSources: ragMatches.map((m, i) => ({
+        n: i + 1,
+        corpus: m.corpus,
+        title: m.title,
+        reference: m.reference,
+        url: m.source_url,
+        similarity: Number(m.similarity.toFixed(3)),
+      }))
     });
 
   } catch (error) {
