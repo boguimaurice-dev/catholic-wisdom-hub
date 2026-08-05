@@ -461,6 +461,10 @@ export default function SuperAdmin() {
               <InstitutionCodesAdmin />
             </TabsContent>
 
+            <TabsContent value="knowledge">
+              <KnowledgeBaseAdmin />
+            </TabsContent>
+
 
 
             {/* SECURITY */}
