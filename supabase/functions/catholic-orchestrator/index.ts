@@ -135,7 +135,55 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
+const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
+
+function getAnthropicKey(): string | undefined {
+  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
+}
+
+/** Appel direct à l'API Claude (Anthropic) avec la clé de l'utilisateur. */
+async function callClaude(messages: Message[]): Promise<string> {
+  const key = getAnthropicKey()!;
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const convo = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 4096,
+      ...(system ? { system } : {}),
+      messages: convo.length ? convo : [{ role: "user", content: "..." }],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Claude error:", response.status, error);
+    throw new HttpError(response.status, `Erreur Claude: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return (data.content || []).filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("\n") || "";
+}
+
 async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
+  // Priorité à la clé Claude de l'utilisateur, repli sur la passerelle Lovable AI.
+  if (getAnthropicKey()) {
+    try {
+      return await callClaude(messages);
+    } catch (e) {
+      console.warn("Claude indisponible, repli sur Lovable AI:", e instanceof Error ? e.message : e);
+    }
+  }
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
 
@@ -169,6 +217,7 @@ async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "";
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
