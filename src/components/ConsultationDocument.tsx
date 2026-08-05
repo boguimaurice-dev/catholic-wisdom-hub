@@ -4,14 +4,22 @@ import { motion } from "framer-motion";
 import { ConsultationResult, EXPERTS_CONFIG, Source, SourceType } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
   BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
-  Quote,
+  Quote, FileDown, Library,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
 import { makeRichRenderers } from "@/components/GlossaryText";
 import { QuillButton } from "@/components/QuillButton";
+import {
+  generateMarkdown, generateBibTeX, generateRIS, generateConsultationPdf, slugify,
+} from "@/lib/exportConsultation";
+
 
 
 interface ConsultationDocumentProps {
@@ -133,6 +141,34 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
     setTimeout(() => setCitationCopied(false), 2000);
   };
 
+  /* ---------------- Exports académiques (PDF / Markdown / Zotero) --------------- */
+
+  const exportPayload = {
+    question,
+    synthesis: synthesisBody,
+    sources,
+    result,
+    includeContributions: showExpertDetails,
+  };
+  const baseName = `consultation-${slugify(question)}`;
+
+  const downloadPdf = () => {
+    const doc = generateConsultationPdf(exportPayload);
+    doc.save(`${baseName}.pdf`);
+    toast.success("Document téléchargé en PDF");
+  };
+
+  const downloadMarkdown = () =>
+    downloadFile(generateMarkdown(exportPayload), `${baseName}.md`, "text/markdown;charset=utf-8");
+
+  const downloadBibTeX = () =>
+    downloadFile(generateBibTeX(exportPayload), `${baseName}.bib`, "application/x-bibtex;charset=utf-8");
+
+  const downloadRIS = () =>
+    downloadFile(generateRIS(exportPayload), `${baseName}.ris`, "application/x-research-info-systems;charset=utf-8");
+
+
+
 
   return (
     <motion.div
@@ -155,13 +191,38 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
             <Button size="sm" variant="secondary" onClick={copyToClipboard} className="text-xs">
               {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}Copier
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => downloadFile(generatePlainText(), "consultation.txt", "text/plain")} className="text-xs">
-              <FileText className="w-3 h-3 mr-1" />TXT
+            <Button size="sm" variant="secondary" onClick={downloadPdf} className="text-xs" aria-label="Télécharger en PDF">
+              <FileDown className="w-3 h-3 mr-1" />PDF
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => downloadFile(generateHTML(), "consultation.html", "text/html")} className="text-xs">
-              <Code className="w-3 h-3 mr-1" />HTML
+            <Button size="sm" variant="secondary" onClick={downloadMarkdown} className="text-xs" aria-label="Télécharger en Markdown">
+              <FileText className="w-3 h-3 mr-1" />Markdown
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary" className="text-xs" aria-label="Autres formats d'exportation">
+                  <Download className="w-3 h-3 mr-1" />Autres
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuLabel className="text-xs">Gestion bibliographique</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={downloadBibTeX}>
+                  <Library className="w-4 h-4 mr-2" />BibTeX (.bib) — Zotero, LaTeX
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={downloadRIS}>
+                  <Library className="w-4 h-4 mr-2" />RIS (.ris) — Zotero, Mendeley
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs">Formats bruts</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => downloadFile(generatePlainText(), `${baseName}.txt`, "text/plain;charset=utf-8")}>
+                  <FileText className="w-4 h-4 mr-2" />Texte brut (.txt)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => downloadFile(generateHTML(), `${baseName}.html`, "text/html;charset=utf-8")}>
+                  <Code className="w-4 h-4 mr-2" />Page HTML (.html)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
         </div>
       </div>
 
