@@ -141,6 +141,34 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
     setTimeout(() => setCitationCopied(false), 2000);
   };
 
+  /* ---------------- Exports académiques (PDF / Markdown / Zotero) --------------- */
+
+  const exportPayload = {
+    question,
+    synthesis: synthesisBody,
+    sources,
+    result,
+    includeContributions: showExpertDetails,
+  };
+  const baseName = `consultation-${slugify(question)}`;
+
+  const downloadPdf = () => {
+    const doc = generateConsultationPdf(exportPayload);
+    doc.save(`${baseName}.pdf`);
+    toast.success("Document téléchargé en PDF");
+  };
+
+  const downloadMarkdown = () =>
+    downloadFile(generateMarkdown(exportPayload), `${baseName}.md`, "text/markdown;charset=utf-8");
+
+  const downloadBibTeX = () =>
+    downloadFile(generateBibTeX(exportPayload), `${baseName}.bib`, "application/x-bibtex;charset=utf-8");
+
+  const downloadRIS = () =>
+    downloadFile(generateRIS(exportPayload), `${baseName}.ris`, "application/x-research-info-systems;charset=utf-8");
+
+
+
 
   return (
     <motion.div
