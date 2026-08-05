@@ -359,6 +359,11 @@ Question: ${question}`;
       selectedExperts = filtered.length ? filtered : ["theologien"];
     }
 
+    // Phase 1 bis: Récupération documentaire (RAG) dans la base de connaissances
+    const ragMatches = await searchKnowledge(admin, question, 8, sourceList.length ? null : null);
+    const ragContext = formatContext(ragMatches);
+    const ragBlock = ragContext ? `\n\n${ragContext}` : "";
+
     // Phase 2: Consultation des experts (parallèle)
     const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
       role: msg.role as "user" | "assistant",
@@ -373,7 +378,7 @@ Question: ${question}`;
         ? `\n\nMODE CONSULTATION DIRECTE: l'utilisateur t'a choisi personnellement. Réponds EXCLUSIVEMENT avec ta casquette, ton style et ton domaine d'expertise hyper-spécialisé de ${expert.title} (${expert.name}). Ne parle pas au nom des autres experts et n'aborde les autres disciplines que si elles servent directement ton champ propre. Développe en profondeur, avec tes sources de prédilection.`
         : "";
       const expertResponse = await callLovableAI([
-        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}${directInstruction}` },
+        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}${directInstruction}${ragBlock}` },
         ...contextMessages,
         { role: "user", content: question }
       ], "google/gemini-3-flash-preview");
