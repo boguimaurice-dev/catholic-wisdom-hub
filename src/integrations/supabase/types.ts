@@ -210,6 +210,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rag_documents: {
+        Row: {
+          content: string
+          corpus: string
+          created_at: string
+          embedding: string | null
+          id: string
+          lang: string
+          metadata: Json
+          model_version: string
+          reference: string | null
+          source_url: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          corpus: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          lang?: string
+          metadata?: Json
+          model_version?: string
+          reference?: string | null
+          source_url?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          corpus?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          lang?: string
+          metadata?: Json
+          model_version?: string
+          reference?: string | null
+          source_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -289,6 +331,22 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      match_rag_documents: {
+        Args: {
+          corpus_filter?: string[]
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          corpus: string
+          id: string
+          reference: string
+          similarity: number
+          source_url: string
+          title: string
+        }[]
       }
       redeem_institution_code: { Args: { _code: string }; Returns: Json }
     }
