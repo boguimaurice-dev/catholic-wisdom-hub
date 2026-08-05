@@ -18,7 +18,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useFontSize } from "@/hooks/useFontSize";
 import { Type } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
@@ -72,7 +72,7 @@ export default function Index() {
 
   const { isListening, startListening, stopListening } = useVoiceInput();
   const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
-  const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
+  const { canConsult, incrementUsage, remainingConsultations, currentPlan, isAdmin, allowedExperts, isExpertAllowed } = usePlanAccess();
   const { scale, increase, decrease, reset } = useFontSize();
   const { open: scriptoriumOpen } = useScriptorium();
 
@@ -227,13 +227,17 @@ export default function Index() {
                       <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-3 py-1 rounded-full border border-secondary/40 shadow-sm cursor-default">
                         <BookOpen className="w-3.5 h-3.5 text-secondary" />
                         <span className="font-medium tabular-nums">
-                          {currentPlan.max_consultations_per_day >= 999
+                          {isAdmin || currentPlan.max_consultations_per_day >= 999
                             ? "∞"
                             : `${remainingConsultations()}/${currentPlan.max_consultations_per_day}`}
                         </span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">Consultations restantes pour aujourd'hui</TooltipContent>
+                    <TooltipContent side="bottom">
+                      {isAdmin
+                        ? "Accès administrateur : consultations illimitées et toutes les fonctionnalités"
+                        : "Consultations restantes pour aujourd'hui"}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
@@ -303,7 +307,16 @@ export default function Index() {
             activeExperts={activeExperts}
             consultedExperts={consultedExperts}
             selectedExpert={selectedExpert}
-            onSelectExpert={(key) => setSelectedExpert((prev) => (prev === key ? null : key))}
+            lockedExperts={allowedExperts ? Object.keys(EXPERTS_CONFIG).filter((k) => !allowedExperts.includes(k)) : []}
+            onLockedExpert={() =>
+              toast.error("Cet expert est réservé aux plans Premium et Élite.", {
+                action: { label: "Voir les plans", onClick: () => (window.location.href = "/pricing") },
+              })
+            }
+            onSelectExpert={(key) => {
+              if (!isExpertAllowed(key)) return;
+              setSelectedExpert((prev) => (prev === key ? null : key));
+            }}
           />
         </div>
       </div>

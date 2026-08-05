@@ -1,5 +1,6 @@
 import { forwardRef, useRef } from "react";
 import { motion } from "framer-motion";
+import { Lock } from "lucide-react";
 import { EXPERTS_CONFIG } from "@/types/consultation";
 
 interface AgentCardProps {
@@ -8,19 +9,22 @@ interface AgentCardProps {
   isConsulted?: boolean;
   isSelected?: boolean;
   isDimmed?: boolean;
+  isLocked?: boolean;
   tabIndex?: number;
   onSelect?: (key: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
 export const AgentCard = forwardRef<HTMLButtonElement, AgentCardProps>(function AgentCard(
-  { expertKey, isActive, isConsulted, isSelected, isDimmed, tabIndex, onSelect, onKeyDown },
+  { expertKey, isActive, isConsulted, isSelected, isDimmed, isLocked, tabIndex, onSelect, onKeyDown },
   ref,
 ) {
   const expert = EXPERTS_CONFIG[expertKey];
   if (!expert) return null;
 
-  const statusLabel = isSelected
+  const statusLabel = isLocked
+    ? "verrouillé, réservé aux plans Premium et Élite"
+    : isSelected
     ? "sélectionné, consultation directe active"
     : isActive
       ? "en cours de consultation"
@@ -37,17 +41,17 @@ export const AgentCard = forwardRef<HTMLButtonElement, AgentCardProps>(function 
       onKeyDown={onKeyDown}
       tabIndex={tabIndex}
       aria-pressed={!!isSelected}
-      aria-label={`${expert.name}, ${expert.title} — ${statusLabel}. Entrée ou Espace pour ${isSelected ? "désactiver" : "activer"} la consultation directe.`}
-      title={`${expert.name} — ${expert.title}`}
+      aria-label={`${expert.name}, ${expert.title} — ${statusLabel}.${isLocked ? " Passez à un plan supérieur pour y accéder." : ` Entrée ou Espace pour ${isSelected ? "désactiver" : "activer"} la consultation directe.`}`}
+      title={isLocked ? `${expert.name} — réservé aux plans Premium et Élite` : `${expert.name} — ${expert.title}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{
-        opacity: isDimmed ? 0.5 : 1,
+        opacity: isLocked ? 0.45 : isDimmed ? 0.5 : 1,
         scale: isSelected ? 1.05 : isActive ? 1.03 : 1,
       }}
       transition={{ duration: 0.25 }}
       className={`
         relative w-full text-left p-2.5 sm:p-3 rounded-lg border transition-all duration-300
-        cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2
+        ${isLocked ? "cursor-not-allowed grayscale" : "cursor-pointer"} hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2
         ${expert.color}
         ${
           isSelected
@@ -66,6 +70,14 @@ export const AgentCard = forwardRef<HTMLButtonElement, AgentCardProps>(function 
           <p className="text-[9px] sm:text-[10px] opacity-70 truncate">{expert.title}</p>
         </div>
       </div>
+      {isLocked && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-muted border border-border flex items-center justify-center"
+        >
+          <Lock className="w-2.5 h-2.5 text-muted-foreground" />
+        </span>
+      )}
       {isActive && (
         <motion.div
           aria-hidden="true"
@@ -92,12 +104,16 @@ export function AgentsGrid({
   activeExperts = [],
   consultedExperts = [],
   selectedExpert = null,
+  lockedExperts = [],
   onSelectExpert,
+  onLockedExpert,
 }: {
   activeExperts?: string[];
   consultedExperts?: string[];
   selectedExpert?: string | null;
+  lockedExperts?: string[];
   onSelectExpert?: (key: string) => void;
+  onLockedExpert?: (key: string) => void;
 }) {
   const expertKeys = Object.keys(EXPERTS_CONFIG);
   const itemsRef = useRef<Array<HTMLButtonElement | null>>([]);
@@ -159,7 +175,8 @@ export function AgentsGrid({
           isConsulted={consultedExperts.includes(key)}
           isSelected={selectedExpert === key}
           isDimmed={!!selectedExpert && selectedExpert !== key}
-          onSelect={onSelectExpert}
+          isLocked={lockedExperts.includes(key)}
+          onSelect={(k) => (lockedExperts.includes(k) ? onLockedExpert?.(k) : onSelectExpert?.(k))}
           onKeyDown={(e) => handleKeyDown(e, index)}
         />
       ))}
