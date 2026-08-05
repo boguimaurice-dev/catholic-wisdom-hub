@@ -253,6 +253,7 @@ export default function SuperAdmin() {
                 <TabsTrigger value="performance"><Server className="h-4 w-4 mr-1" />Performance</TabsTrigger>
                 <TabsTrigger value="database"><Database className="h-4 w-4 mr-1" />Base de données</TabsTrigger>
                 <TabsTrigger value="codes"><Shield className="h-4 w-4 mr-1" />Codes institutionnels</TabsTrigger>
+                <TabsTrigger value="knowledge"><BookOpen className="h-4 w-4 mr-1" />Base de connaissances</TabsTrigger>
               </TabsList>
             </ScrollArea>
 
