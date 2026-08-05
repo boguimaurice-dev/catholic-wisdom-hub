@@ -352,6 +352,12 @@ Question: ${question}`;
       analyseRaison = "Consultation théologique par défaut";
     }
 
+    // Plan Basique: l'orchestrateur ne mobilise que les experts de base
+    if (restrictedToBaseExperts) {
+      const filtered = selectedExperts.filter((k) => BASE_EXPERTS.includes(k));
+      selectedExperts = filtered.length ? filtered : ["theologien"];
+    }
+
     // Phase 2: Consultation des experts (parallèle)
     const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
       role: msg.role as "user" | "assistant",
