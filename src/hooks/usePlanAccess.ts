@@ -35,5 +35,7 @@ export function usePlanAccess() {
     /** null = historique illimité */
     historyDays: isBasique ? 7 : null,
     unlimitedQuota: isAdmin,
+    canConsult: () => (isAdmin ? true : rest.canConsult()),
+    remainingConsultations: () => (isAdmin ? 9999 : rest.remainingConsultations()),
   };
 }
