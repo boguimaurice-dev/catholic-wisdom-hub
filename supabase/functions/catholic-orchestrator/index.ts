@@ -400,7 +400,7 @@ Question: ${question}`;
 
     const synthesePrompt = `${directSynthesisHeader} ${directExpertKey ? "Structure et approfondis ta réponse ci-dessous." : "Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts."}
 
-${levelInstruction}
+${levelInstruction}${ragBlock}
 
 QUESTION POSÉE: ${question}
 
