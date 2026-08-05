@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr, enUS, es, pt } from "date-fns/locale";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 
 const dateLocales = { fr, en: enUS, es, pt };
 
@@ -32,16 +33,24 @@ export default function History() {
   const [consultations, setConsultations] = useState<SavedConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { historyDays, loading: planLoading } = usePlanAccess();
 
   useEffect(() => {
-    if (user) fetchConsultations();
-  }, [user]);
+    if (user && !planLoading) fetchConsultations();
+  }, [user, planLoading, historyDays]);
 
   const fetchConsultations = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("consultations")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (historyDays) {
+      const since = new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte("created_at", since);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast.error(t("history.loadError"));
