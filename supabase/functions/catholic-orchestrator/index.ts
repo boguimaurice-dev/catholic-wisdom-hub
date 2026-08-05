@@ -360,7 +360,7 @@ Question: ${question}`;
     }
 
     // Phase 1 bis: Récupération documentaire (RAG) dans la base de connaissances
-    const ragMatches = await searchKnowledge(admin, question, 8, sourceList.length ? null : null);
+    const ragMatches = await searchKnowledge(admin, question, 8);
     const ragContext = formatContext(ragMatches);
     const ragBlock = ragContext ? `\n\n${ragContext}` : "";
 
