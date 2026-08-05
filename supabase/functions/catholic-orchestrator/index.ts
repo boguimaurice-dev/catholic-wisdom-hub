@@ -135,7 +135,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
+const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-5";
 
 function getAnthropicKey(): string | undefined {
   return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");

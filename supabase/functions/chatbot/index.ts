@@ -56,7 +56,7 @@ serve(async (req) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929",
+          model: Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-5",
           max_tokens: 2048,
           system: SYSTEM_PROMPT,
           stream: true,
