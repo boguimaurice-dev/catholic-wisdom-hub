@@ -37,9 +37,14 @@ serve(async (req) => {
 
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
+    if (!LOVABLE_API_KEY && !anthropicKey) throw new Error("Aucune clé IA configurée");
+
+    const gatewayMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...messages.filter((m: { role: string; content: string }) => m.role !== "system"),
+    ];
+
 
     // 1) Claude (clé de l'utilisateur) — flux converti au format OpenAI attendu par le client
     if (anthropicKey) {
