@@ -10,10 +10,11 @@ import {
 import {
   Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
   BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
-  Quote, FileDown, Library,
+  Quote, FileDown, Library, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { makeRichRenderers } from "@/components/GlossaryText";
 import { QuillButton } from "@/components/QuillButton";
 import {
@@ -47,6 +48,7 @@ function makeFootnoteRenderers(valid: Set<number>) {
 
 
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
+  const { canExportPdf, canExportAdvanced } = usePlanAccess();
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [citationCopied, setCitationCopied] = useState(false);
@@ -143,6 +145,12 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
 
   /* ---------------- Exports académiques (PDF / Markdown / Zotero) --------------- */
 
+  const requireUpgrade = (label: string) => {
+    toast.error(`${label} est réservé aux plans supérieurs.`, {
+      action: { label: "Voir les plans", onClick: () => (window.location.href = "/pricing") },
+    });
+  };
+
   const exportPayload = {
     question,
     synthesis: synthesisBody,
@@ -191,11 +199,23 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
             <Button size="sm" variant="secondary" onClick={copyToClipboard} className="text-xs">
               {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}Copier
             </Button>
-            <Button size="sm" variant="secondary" onClick={downloadPdf} className="text-xs" aria-label="Télécharger en PDF">
-              <FileDown className="w-3 h-3 mr-1" />PDF
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => (canExportPdf ? downloadPdf() : requireUpgrade("L'export PDF"))}
+              className="text-xs"
+              aria-label={canExportPdf ? "Télécharger en PDF" : "Export PDF réservé aux plans supérieurs"}
+            >
+              {canExportPdf ? <FileDown className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}PDF
             </Button>
-            <Button size="sm" variant="secondary" onClick={downloadMarkdown} className="text-xs" aria-label="Télécharger en Markdown">
-              <FileText className="w-3 h-3 mr-1" />Markdown
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => (canExportAdvanced ? downloadMarkdown() : requireUpgrade("L'export Markdown"))}
+              className="text-xs"
+              aria-label={canExportAdvanced ? "Télécharger en Markdown" : "Export Markdown réservé au plan Élite"}
+            >
+              {canExportAdvanced ? <FileText className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}Markdown
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -205,11 +225,13 @@ ${result.expertContributions.map(c => `<div class="contribution"><strong>${c.nam
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="text-xs">Gestion bibliographique</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={downloadBibTeX}>
-                  <Library className="w-4 h-4 mr-2" />BibTeX (.bib) — Zotero, LaTeX
+                <DropdownMenuItem onSelect={() => (canExportAdvanced ? downloadBibTeX() : requireUpgrade("L'export BibTeX"))}>
+                  {canExportAdvanced ? <Library className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+                  BibTeX (.bib) — Zotero, LaTeX
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={downloadRIS}>
-                  <Library className="w-4 h-4 mr-2" />RIS (.ris) — Zotero, Mendeley
+                <DropdownMenuItem onSelect={() => (canExportAdvanced ? downloadRIS() : requireUpgrade("L'export RIS"))}>
+                  {canExportAdvanced ? <Library className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+                  RIS (.ris) — Zotero, Mendeley
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">Formats bruts</DropdownMenuLabel>

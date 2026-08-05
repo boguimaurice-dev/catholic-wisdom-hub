@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr, enUS, es, pt } from "date-fns/locale";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 
 const dateLocales = { fr, en: enUS, es, pt };
 
@@ -32,16 +33,24 @@ export default function History() {
   const [consultations, setConsultations] = useState<SavedConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { historyDays, loading: planLoading } = usePlanAccess();
 
   useEffect(() => {
-    if (user) fetchConsultations();
-  }, [user]);
+    if (user && !planLoading) fetchConsultations();
+  }, [user, planLoading, historyDays]);
 
   const fetchConsultations = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("consultations")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (historyDays) {
+      const since = new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte("created_at", since);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast.error(t("history.loadError"));
@@ -99,6 +108,15 @@ export default function History() {
       </header>
 
       <main className="max-w-4xl mx-auto p-4">
+        {historyDays && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2 text-xs text-foreground/80">
+            <Clock className="w-3.5 h-3.5 text-secondary shrink-0" />
+            <span>
+              Plan Basique : historique limité aux {historyDays} derniers jours.{" "}
+              <Link to="/pricing" className="underline font-medium">Passer à Premium</Link> pour un historique illimité.
+            </span>
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />

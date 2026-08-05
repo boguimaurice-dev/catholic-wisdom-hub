@@ -195,6 +195,15 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // --- Administrator: full access to every plan feature, no quota ---
+    const { data: adminRole } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isPlatformAdmin = !!adminRole;
+
     // --- Server-side quota check ---
     const today = new Date().toISOString().slice(0, 10);
 
@@ -207,14 +216,16 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1);
 
+    let planSlug = "basique";
     let maxPerDay = 3;
     if (subs && subs.length > 0) {
       const { data: plan } = await admin
         .from("plans")
-        .select("max_consultations_per_day")
+        .select("slug, max_consultations_per_day")
         .eq("id", subs[0].plan_id)
         .single();
       if (plan?.max_consultations_per_day) maxPerDay = plan.max_consultations_per_day;
+      if (plan?.slug) planSlug = plan.slug;
     } else {
       const { data: basic } = await admin
         .from("plans")
@@ -232,7 +243,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const currentCount = usageRow?.consultation_count ?? 0;
-    if (currentCount >= maxPerDay) {
+    if (!isPlatformAdmin && currentCount >= maxPerDay) {
       return jsonResponse({
         error: `Limite quotidienne atteinte (${maxPerDay} consultations/jour). Passez à un plan supérieur.`,
         errorType: "quota_exceeded",
@@ -240,7 +251,20 @@ serve(async (req) => {
       }, 403);
     }
 
-    const { question, conversationHistory = [], level = "grand_public", filters = { periods: [], sources: [] }, expertKey = null } = await req.json();
+    const body = await req.json();
+    const { question, conversationHistory = [], level = "grand_public", filters = { periods: [], sources: [] } } = body;
+    let expertKey = body.expertKey ?? null;
+
+    // Plan Basique: seuls les experts de base sont accessibles en consultation directe
+    const BASE_EXPERTS = ["bibliste", "theologien"];
+    const restrictedToBaseExperts = !isPlatformAdmin && planSlug === "basique";
+    if (restrictedToBaseExperts && expertKey && !BASE_EXPERTS.includes(expertKey)) {
+      return jsonResponse({
+        error: "Cet expert est réservé aux plans Premium et Élite.",
+        errorType: "plan_restricted",
+        success: false,
+      }, 403);
+    }
 
     if (!question) {
       return jsonResponse({ error: "Question requise" }, 400);
@@ -326,6 +350,12 @@ Question: ${question}`;
     } catch {
       selectedExperts = ["theologien"];
       analyseRaison = "Consultation théologique par défaut";
+    }
+
+    // Plan Basique: l'orchestrateur ne mobilise que les experts de base
+    if (restrictedToBaseExperts) {
+      const filtered = selectedExperts.filter((k) => BASE_EXPERTS.includes(k));
+      selectedExperts = filtered.length ? filtered : ["theologien"];
     }
 
     // Phase 2: Consultation des experts (parallèle)
