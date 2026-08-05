@@ -108,6 +108,15 @@ export default function History() {
       </header>
 
       <main className="max-w-4xl mx-auto p-4">
+        {historyDays && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2 text-xs text-foreground/80">
+            <Clock className="w-3.5 h-3.5 text-secondary shrink-0" />
+            <span>
+              Plan Basique : historique limité aux {historyDays} derniers jours.{" "}
+              <Link to="/pricing" className="underline font-medium">Passer à Premium</Link> pour un historique illimité.
+            </span>
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
