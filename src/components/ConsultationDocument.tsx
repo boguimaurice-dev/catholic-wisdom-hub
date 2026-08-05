@@ -4,14 +4,22 @@ import { motion } from "framer-motion";
 import { ConsultationResult, EXPERTS_CONFIG, Source, SourceType } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Download, Copy, FileText, Code, Check, ChevronDown, ChevronUp,
   BookOpen, Landmark, ScrollText, Church, Feather, Gavel, Clock, BookMarked, ExternalLink, Link as LinkIcon,
-  Quote,
+  Quote, FileDown, Library,
 } from "lucide-react";
 import { toast } from "sonner";
 import { parseSources } from "@/lib/parseSources";
 import { makeRichRenderers } from "@/components/GlossaryText";
 import { QuillButton } from "@/components/QuillButton";
+import {
+  generateMarkdown, generateBibTeX, generateRIS, generateConsultationPdf, slugify,
+} from "@/lib/exportConsultation";
+
 
 
 interface ConsultationDocumentProps {
