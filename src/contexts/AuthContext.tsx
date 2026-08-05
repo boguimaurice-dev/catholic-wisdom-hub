@@ -30,14 +30,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (async () => {
+      let { data: { session } } = await supabase.auth.getSession();
+      // Si le jeton local est expiré (appareil resté inactif), on tente un refresh
+      // silencieux avant de considérer l'utilisateur comme déconnecté.
+      if (!session) {
+        const { data } = await supabase.auth.refreshSession();
+        session = data.session ?? null;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    })();
 
-    return () => subscription.unsubscribe();
+    // Revalide la session quand l'app revient au premier plan (PWA / onglet dormant)
+    const onFocus = () => {
+      if (document.visibilityState === "visible") {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) supabase.auth.refreshSession();
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
