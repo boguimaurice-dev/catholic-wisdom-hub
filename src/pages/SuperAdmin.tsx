@@ -13,9 +13,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { InstitutionCodesAdmin } from "@/components/admin/InstitutionCodesAdmin";
+import { KnowledgeBaseAdmin } from "@/components/admin/KnowledgeBaseAdmin";
 import {
   Activity, ArrowLeft, BarChart3, Database, FileText, Loader2, RefreshCw,
-  Shield, Users, CreditCard, TrendingUp, AlertTriangle, CheckCircle2, Server,
+  Shield, Users, CreditCard, TrendingUp, AlertTriangle, CheckCircle2, Server, BookOpen,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -253,6 +254,7 @@ export default function SuperAdmin() {
                 <TabsTrigger value="performance"><Server className="h-4 w-4 mr-1" />Performance</TabsTrigger>
                 <TabsTrigger value="database"><Database className="h-4 w-4 mr-1" />Base de données</TabsTrigger>
                 <TabsTrigger value="codes"><Shield className="h-4 w-4 mr-1" />Codes institutionnels</TabsTrigger>
+                <TabsTrigger value="knowledge"><BookOpen className="h-4 w-4 mr-1" />Base de connaissances</TabsTrigger>
               </TabsList>
             </ScrollArea>
 
@@ -457,6 +459,10 @@ export default function SuperAdmin() {
             {/* INSTITUTION CODES */}
             <TabsContent value="codes">
               <InstitutionCodesAdmin />
+            </TabsContent>
+
+            <TabsContent value="knowledge">
+              <KnowledgeBaseAdmin />
             </TabsContent>
 
 

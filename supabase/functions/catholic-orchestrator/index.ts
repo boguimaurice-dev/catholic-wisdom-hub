@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { searchKnowledge, formatContext } from "../_shared/rag.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -358,6 +359,11 @@ Question: ${question}`;
       selectedExperts = filtered.length ? filtered : ["theologien"];
     }
 
+    // Phase 1 bis: Récupération documentaire (RAG) dans la base de connaissances
+    const ragMatches = await searchKnowledge(admin, question, 8);
+    const ragContext = formatContext(ragMatches);
+    const ragBlock = ragContext ? `\n\n${ragContext}` : "";
+
     // Phase 2: Consultation des experts (parallèle)
     const contextMessages: Message[] = conversationHistory.map((msg: { role: string; content: string }) => ({
       role: msg.role as "user" | "assistant",
@@ -372,7 +378,7 @@ Question: ${question}`;
         ? `\n\nMODE CONSULTATION DIRECTE: l'utilisateur t'a choisi personnellement. Réponds EXCLUSIVEMENT avec ta casquette, ton style et ton domaine d'expertise hyper-spécialisé de ${expert.title} (${expert.name}). Ne parle pas au nom des autres experts et n'aborde les autres disciplines que si elles servent directement ton champ propre. Développe en profondeur, avec tes sources de prédilection.`
         : "";
       const expertResponse = await callLovableAI([
-        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}${directInstruction}` },
+        { role: "system", content: `${expert.systemPrompt}\n\n${levelInstruction}${directInstruction}${ragBlock}` },
         ...contextMessages,
         { role: "user", content: question }
       ], "google/gemini-3-flash-preview");
@@ -394,7 +400,7 @@ Question: ${question}`;
 
     const synthesePrompt = `${directSynthesisHeader} ${directExpertKey ? "Structure et approfondis ta réponse ci-dessous." : "Tu dois créer une synthèse harmonieuse et complète des contributions de tes experts."}
 
-${levelInstruction}
+${levelInstruction}${ragBlock}
 
 QUESTION POSÉE: ${question}
 
@@ -458,7 +464,15 @@ Format ta réponse en markdown, puis termine impérativement par le bloc \`\`\`s
         reason: analyseRaison
       },
       expertContributions: expertResponses,
-      synthesis: syntheseResponse
+      synthesis: syntheseResponse,
+      retrievedSources: ragMatches.map((m, i) => ({
+        n: i + 1,
+        corpus: m.corpus,
+        title: m.title,
+        reference: m.reference,
+        url: m.source_url,
+        similarity: Number(m.similarity.toFixed(3)),
+      }))
     });
 
   } catch (error) {
