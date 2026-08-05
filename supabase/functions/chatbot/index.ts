@@ -39,10 +39,76 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const gatewayMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...messages.filter((m: { role: string; content: string }) => m.role !== "system"),
-    ];
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
+
+    // 1) Claude (clé de l'utilisateur) — flux converti au format OpenAI attendu par le client
+    if (anthropicKey) {
+      const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929",
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          stream: true,
+          messages: messages
+            .filter((m: { role: string }) => m.role !== "system")
+            .map((m: { role: string; content: string }) => ({
+              role: m.role === "assistant" ? "assistant" : "user",
+              content: m.content,
+            })),
+        }),
+      });
+
+      if (claudeRes.ok && claudeRes.body) {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            const reader = claudeRes.body!.getReader();
+            let buf = "";
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                let idx: number;
+                while ((idx = buf.indexOf("\n")) !== -1) {
+                  const line = buf.slice(0, idx).trim();
+                  buf = buf.slice(idx + 1);
+                  if (!line.startsWith("data:")) continue;
+                  try {
+                    const evt = JSON.parse(line.slice(5).trim());
+                    const text = evt?.delta?.text;
+                    if (evt.type === "content_block_delta" && text) {
+                      controller.enqueue(encoder.encode(
+                        `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`,
+                      ));
+                    }
+                  } catch { /* ignore */ }
+                }
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            } catch (err) {
+              console.error("claude stream error:", err);
+            } finally {
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+
+      console.error("Claude error:", claudeRes.status, await claudeRes.text());
+      // repli sur Lovable AI ci-dessous
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -57,6 +123,7 @@ serve(async (req) => {
         max_tokens: 2048,
       }),
     });
+
 
     if (!response.ok) {
       const t = await response.text();
