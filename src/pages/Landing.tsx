@@ -5,7 +5,7 @@ import { LandingPricing } from "@/components/LandingPricing";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
-import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
+import { LandingUseCases } from "@/components/landing/LandingUseCases";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { prefetchWeek } from "@/lib/liturgyCache";
@@ -81,7 +81,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <LandingTestimonials />
+      <LandingUseCases />
       <LandingCTA />
       <LandingFooter />
     </div>
