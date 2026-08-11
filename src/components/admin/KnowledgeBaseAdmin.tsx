@@ -200,6 +200,8 @@ export function KnowledgeBaseAdmin() {
         </CardContent>
       </Card>
 
+      <KnowledgeBulkImport onDone={load} />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Derniers fragments indexés</CardTitle>
