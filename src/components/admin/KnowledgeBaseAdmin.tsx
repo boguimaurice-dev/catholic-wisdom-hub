@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, BookOpen, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { KnowledgeBulkImport } from "./KnowledgeBulkImport";
 
 const CORPORA = [
   { value: "ecriture", label: "Écriture Sainte" },
