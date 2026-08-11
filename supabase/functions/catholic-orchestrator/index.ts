@@ -174,8 +174,39 @@ async function callClaude(messages: Message[]): Promise<string> {
   return (data.content || []).filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("\n") || "";
 }
 
+/** Appel direct à l'API DeepSeek (compatible OpenAI). */
+async function callDeepSeek(messages: Message[]): Promise<string> {
+  const key = Deno.env.get("deeseek_api_key") || Deno.env.get("DEEPSEEK_API_KEY")!;
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat",
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("DeepSeek error:", response.status, error);
+    throw new HttpError(response.status, `Erreur DeepSeek: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
-  // Priorité à la clé Claude de l'utilisateur, repli sur la passerelle Lovable AI.
+  // Priorité: DeepSeek (clé utilisateur) → Claude → passerelle Lovable AI.
+  if (Deno.env.get("deeseek_api_key") || Deno.env.get("DEEPSEEK_API_KEY")) {
+    try {
+      return await callDeepSeek(messages);
+    } catch (e) {
+      console.warn("DeepSeek indisponible, repli:", e instanceof Error ? e.message : e);
+    }
+  }
+
   if (getAnthropicKey()) {
     try {
       return await callClaude(messages);
@@ -183,6 +214,7 @@ async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro
       console.warn("Claude indisponible, repli sur Lovable AI:", e instanceof Error ? e.message : e);
     }
   }
+
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
