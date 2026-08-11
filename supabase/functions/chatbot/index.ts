@@ -38,16 +38,38 @@ serve(async (req) => {
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
-    if (!LOVABLE_API_KEY && !anthropicKey) throw new Error("Aucune clé IA configurée");
+    const deepseekKey = Deno.env.get("deeseek_api_key") || Deno.env.get("DEEPSEEK_API_KEY");
+    if (!LOVABLE_API_KEY && !anthropicKey && !deepseekKey) throw new Error("Aucune clé IA configurée");
 
     const gatewayMessages = [
       { role: "system", content: SYSTEM_PROMPT },
       ...messages.filter((m: { role: string; content: string }) => m.role !== "system"),
     ];
 
+    // 0) DeepSeek (clé de l'utilisateur) — format OpenAI, flux transmis tel quel
+    if (deepseekKey) {
+      const dsRes = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${deepseekKey}` },
+        body: JSON.stringify({
+          model: Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat",
+          messages: gatewayMessages,
+          stream: true,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (dsRes.ok && dsRes.body) {
+        return new Response(dsRes.body, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+      console.error("DeepSeek error:", dsRes.status, await dsRes.text());
+    }
 
     // 1) Claude (clé de l'utilisateur) — flux converti au format OpenAI attendu par le client
     if (anthropicKey) {
+
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {

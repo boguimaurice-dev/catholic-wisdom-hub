@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
 
 type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
 
@@ -50,32 +52,15 @@ export function useVoiceInput() {
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const cancelledRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback((text: string) => {
+  const speakWithBrowser = useCallback((cleanText: string) => {
     if (!window.speechSynthesis) {
       toast.error("La synthèse vocale n'est pas supportée par votre navigateur.");
       return;
     }
 
-    const cleanText = text
-      .replace(/```sources[\s\S]*?```/gi, "")
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/#{1,6}\s*/g, "")
-      .replace(/\*\*?/g, "")
-      .replace(/_{1,2}/g, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/\[\d+\]/g, "")
-      .replace(/`{1,3}[^`]*`{1,3}/g, "")
-      .replace(/>\s*/g, "")
-      .replace(/^[-•]\s*/gm, "")
-      .replace(/\n+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!cleanText) return;
-
     window.speechSynthesis.cancel();
-    cancelledRef.current = false;
 
     // Découper en chunks (~200 car.) — Chrome coupe la synthèse au-delà de ~15s
     const sentences = cleanText.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [cleanText];
@@ -129,7 +114,6 @@ export function useTTS() {
         startSpeaking();
       };
       window.speechSynthesis.onvoiceschanged = handler;
-      // fallback si l'événement ne se déclenche pas
       setTimeout(() => {
         if (!cancelledRef.current && !window.speechSynthesis.speaking) {
           window.speechSynthesis.onvoiceschanged = null;
@@ -141,11 +125,87 @@ export function useTTS() {
     }
   }, []);
 
+  const speak = useCallback(
+    async (text: string) => {
+      const cleanText = text
+        .replace(/```sources[\s\S]*?```/gi, "")
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/#{1,6}\s*/g, "")
+        .replace(/\*\*?/g, "")
+        .replace(/_{1,2}/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/\[\d+\]/g, "")
+        .replace(/`{1,3}[^`]*`{1,3}/g, "")
+        .replace(/>\s*/g, "")
+        .replace(/^[-•]\s*/gm, "")
+        .replace(/\n+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!cleanText) return;
+
+      cancelledRef.current = false;
+      window.speechSynthesis?.cancel();
+      audioRef.current?.pause();
+      audioRef.current = null;
+
+      // 1) Voix naturelle ElevenLabs
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          setIsSpeaking(true);
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ text: cleanText }),
+            },
+          );
+
+          const contentType = res.headers.get("Content-Type") || "";
+          if (res.ok && contentType.includes("audio")) {
+            if (cancelledRef.current) return;
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            audio.onended = () => {
+              setIsSpeaking(false);
+              URL.revokeObjectURL(url);
+            };
+            audio.onerror = () => {
+              setIsSpeaking(false);
+              URL.revokeObjectURL(url);
+            };
+            if (cancelledRef.current) return;
+            await audio.play();
+            return;
+          }
+          console.warn("ElevenLabs indisponible, repli sur la voix du navigateur");
+        }
+      } catch (e) {
+        console.warn("ElevenLabs error, repli navigateur:", e);
+      }
+
+      if (cancelledRef.current) return;
+      // 2) Repli : synthèse vocale du navigateur
+      speakWithBrowser(cleanText);
+    },
+    [speakWithBrowser],
+  );
+
   const stop = useCallback(() => {
     cancelledRef.current = true;
-    window.speechSynthesis.cancel();
+    audioRef.current?.pause();
+    audioRef.current = null;
+    window.speechSynthesis?.cancel();
     setIsSpeaking(false);
   }, []);
 
   return { isSpeaking, speak, stop };
 }
+
