@@ -2,3 +2,6 @@ project_id = "xfbjowupnffoykyhaqoz"
 
 [functions.paystack-webhook]
 verify_jwt = false
+
+[functions.catholic-orchestrator]
+verify_jwt = false
