@@ -90,29 +90,20 @@ export function useSubscription() {
     return dailyUsage < currentPlan.max_consultations_per_day;
   };
 
+  // Le décompte est effectué côté serveur (fonction catholic-orchestrator).
+  // Ici on se contente de relire la valeur officielle.
   const incrementUsage = async () => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
 
-    const { data: existing } = await supabase
+    const { data } = await supabase
       .from("daily_usage")
-      .select("*")
+      .select("consultation_count")
       .eq("user_id", user.id)
       .eq("usage_date", today)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
-      await supabase
-        .from("daily_usage")
-        .update({ consultation_count: existing.consultation_count + 1 })
-        .eq("id", existing.id);
-      setDailyUsage(existing.consultation_count + 1);
-    } else {
-      await supabase
-        .from("daily_usage")
-        .insert({ user_id: user.id, usage_date: today, consultation_count: 1 });
-      setDailyUsage(1);
-    }
+    setDailyUsage(data?.consultation_count ?? dailyUsage + 1);
   };
 
   const remainingConsultations = () => {

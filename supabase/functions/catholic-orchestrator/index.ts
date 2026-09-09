@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,6 +112,9 @@ Guide avec sagesse sur la vie consacrée et la tradition monastique.`
   }
 };
 
+// Experts accessibles au plan gratuit (basique)
+const BASE_EXPERTS = ["theologien", "bibliste", "liturgiste"];
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
@@ -133,9 +137,84 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
+async function callDeepSeek(messages: Message[]): Promise<string | null> {
+  const key = Deno.env.get("deeseek_api_key") || Deno.env.get("DEEPSEEK_API_KEY");
+  if (!key) return null;
+
+  try {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn("DeepSeek unavailable:", response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.warn("DeepSeek call failed:", e);
+    return null;
+  }
+}
+
+async function callClaude(messages: Message[]): Promise<string | null> {
+  const key = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
+  if (!key) return null;
+
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const rest = messages.filter((m) => m.role !== "system");
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: system || undefined,
+        messages: rest.map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn("Claude unavailable:", response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
+    return text || null;
+  } catch (e) {
+    console.warn("Claude call failed:", e);
+    return null;
+  }
+}
+
 async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
+  // Priorité : DeepSeek -> Claude -> Lovable AI Gateway
+  const deepseek = await callDeepSeek(messages);
+  if (deepseek) return deepseek;
+
+  const claude = await callClaude(messages);
+  if (claude) return claude;
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new HttpError(500, "LOVABLE_API_KEY not configured");
+  if (!LOVABLE_API_KEY) throw new HttpError(500, "Aucun fournisseur IA disponible");
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -180,6 +259,73 @@ serve(async (req) => {
       return jsonResponse({ error: "Question requise" }, 400);
     }
 
+    // ---- Authentification + quota côté serveur ----
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+    const authHeader = req.headers.get("Authorization") || "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: userData } = await admin.auth.getUser(jwt);
+    const user = userData?.user;
+
+    if (!user) {
+      return jsonResponse({ error: "Authentification requise", errorType: "unauthenticated", success: false }, 401);
+    }
+
+    const { data: adminRole } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!adminRole;
+
+    let maxPerDay = 3;
+    let planSlug = "basique";
+
+    if (!isAdmin) {
+      const { data: sub } = await admin
+        .from("user_subscriptions")
+        .select("plan_id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let plan = null;
+      if (sub?.plan_id) {
+        const { data } = await admin.from("plans").select("slug, max_consultations_per_day").eq("id", sub.plan_id).maybeSingle();
+        plan = data;
+      }
+      if (!plan) {
+        const { data } = await admin.from("plans").select("slug, max_consultations_per_day").eq("slug", "basique").maybeSingle();
+        plan = data;
+      }
+      if (plan) {
+        planSlug = plan.slug;
+        maxPerDay = plan.max_consultations_per_day;
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const { data: usage } = await admin
+        .from("daily_usage")
+        .select("id, consultation_count")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .maybeSingle();
+
+      const used = usage?.consultation_count ?? 0;
+      if (used >= maxPerDay) {
+        return jsonResponse({
+          error: `Limite quotidienne atteinte (${maxPerDay} consultations par jour). Passez à un plan supérieur pour continuer.`,
+          errorType: "quota_exceeded",
+          success: false,
+        }, 403);
+      }
+    }
+
     // Phase 1: Analyse par l'Orchestrateur
     const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
 
@@ -220,6 +366,12 @@ Question: ${question}`;
     } catch {
       selectedExperts = ["theologien"];
       analyseRaison = "Consultation théologique par défaut";
+    }
+
+    // Restriction des experts avancés pour le plan gratuit
+    if (!isAdmin && planSlug === "basique") {
+      const filtered = selectedExperts.filter((k) => BASE_EXPERTS.includes(k));
+      selectedExperts = filtered.length ? filtered : ["theologien"];
     }
 
     // Phase 2: Consultation des experts (parallèle)
@@ -272,6 +424,23 @@ Format ta réponse en markdown avec une belle mise en page.`;
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
     ]);
+
+    // Comptabilisation serveur de la consultation
+    if (!isAdmin) {
+      const today = new Date().toISOString().split("T")[0];
+      const { data: usage } = await admin
+        .from("daily_usage")
+        .select("id, consultation_count")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .maybeSingle();
+
+      if (usage) {
+        await admin.from("daily_usage").update({ consultation_count: usage.consultation_count + 1 }).eq("id", usage.id);
+      } else {
+        await admin.from("daily_usage").insert({ user_id: user.id, usage_date: today, consultation_count: 1 });
+      }
+    }
 
     return jsonResponse({
       success: true,
