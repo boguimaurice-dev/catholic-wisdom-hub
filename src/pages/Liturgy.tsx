@@ -34,24 +34,64 @@ export default function Liturgy() {
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
-  const load = async (targetDate: string) => {
-    setLoading(true);
-    stopSpeaking();
+  const cacheKey = (d: string) => `liturgy:${language}:${d}`;
+  const readCache = (d: string): LiturgyData | null => {
+    try { const raw = localStorage.getItem(cacheKey(d)); return raw ? JSON.parse(raw) : null; } catch { return null; }
+  };
+  const writeCache = (d: string, v: LiturgyData) => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const res = await fetch(FUNCTION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ date: targetDate, language }),
+      localStorage.setItem(cacheKey(d), JSON.stringify(v));
+      // purge entries older than 7 days
+      const limit = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+      Object.keys(localStorage).forEach((k) => {
+        const m = k.match(/^liturgy:[a-z]+:(\d{4}-\d{2}-\d{2})$/);
+        if (m && m[1] < limit) localStorage.removeItem(k);
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Erreur");
-      setData(json);
+    } catch { /* quota */ }
+  };
+
+  const fetchDay = async (targetDate: string): Promise<LiturgyData> => {
+    const { data: session } = await supabase.auth.getSession();
+    const res = await fetch(FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ date: targetDate, language }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || "Erreur");
+    writeCache(targetDate, json);
+    return json;
+  };
+
+  const prefetchNext = async (from: string) => {
+    for (let i = 1; i <= 2; i++) {
+      const d = new Date(new Date(from).getTime() + i * 864e5).toISOString().slice(0, 10);
+      if (!readCache(d)) { try { await fetchDay(d); } catch { break; } }
+    }
+  };
+
+  const load = async (targetDate: string, force = false) => {
+    stopSpeaking();
+    const cached = readCache(targetDate);
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+      if (!force) { if (navigator.onLine) prefetchNext(targetDate); return; }
+    }
+    if (!navigator.onLine) {
+      if (!cached) toast.error("Hors connexion : cette date n'a pas encore été enregistrée sur l'appareil.");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      setData(await fetchDay(targetDate));
+      prefetchNext(targetDate);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur de chargement");
+      if (!cached) toast.error(e instanceof Error ? e.message : "Erreur de chargement");
     } finally {
       setLoading(false);
     }
@@ -60,7 +100,7 @@ export default function Liturgy() {
   useEffect(() => {
     load(date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [language]);
 
   const labelFor = (type: string) => {
     const map: Record<string, string> = {
