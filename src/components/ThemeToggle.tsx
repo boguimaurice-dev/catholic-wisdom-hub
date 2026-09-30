@@ -12,6 +12,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="text-primary-foreground hover:bg-primary-foreground/10"
       title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+      aria-label={theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"}
     >
       {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </Button>
