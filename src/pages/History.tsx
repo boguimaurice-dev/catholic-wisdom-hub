@@ -168,6 +168,7 @@ export default function History() {
                         result={toConsultationResult(c)}
                         question={c.question}
                         deepenDisabled={deepening}
+                        stickyDeepen
                         onDeepen={(point) => handleDeepen(c, point)}
                       />
                       {(deepenings[c.id] || []).map((d, i) => (
@@ -177,6 +178,7 @@ export default function History() {
                             result={d.result}
                             question={d.point}
                             deepenDisabled={deepening}
+                            stickyDeepen
                             onDeepen={(p) => handleDeepen({ ...c, synthesis: d.result.synthesis }, p)}
                           />
                         </div>
