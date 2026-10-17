@@ -61,15 +61,24 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    const q = input.trim();
+    setInput("");
+    await runConsultation(q, q);
+  };
 
+  const handleDeepen = (point: string, synthesis: string, originalQuestion: string) => {
+    if (!point.trim() || isLoading) return;
+    const enriched = `Approfondissement de la synthèse précédente.\n\nQuestion d'origine : ${originalQuestion}\n\nExtrait de la synthèse déjà donnée :\n${synthesis.slice(0, 4000)}\n\nPoint à approfondir : ${point.trim()}\n\nApprofondis précisément ce point, sans répéter toute la synthèse.`;
+    runConsultation(`🔎 Approfondir : ${point.trim()}`, enriched);
+  };
+
+  const runConsultation = async (displayQuestion: string, question: string) => {
     if (!canConsult()) {
       toast.error(t("index.limitReached").replace("{limit}", String(currentPlan?.max_consultations_per_day || 3)));
       return;
     }
 
-    const question = input.trim();
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    setMessages((prev) => [...prev, { role: "user", content: displayQuestion }]);
     setIsLoading(true);
     setActiveExperts([]);
     setConsultedExperts([]);
@@ -278,6 +287,8 @@ export default function Index() {
                         <ConsultationDocument
                           result={message.consultationResult}
                           question={messages[idx - 1]?.content || ""}
+                          deepenDisabled={isLoading}
+                          onDeepen={(point) => handleDeepen(point, message.content, messages[idx - 1]?.content || "")}
                         />
                          <TTSControls className="absolute top-3 right-3" status={ttsStatus} active={speakingIdx === idx} onListen={() => { setSpeakingIdx(idx); speak(message.content); }} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
                       </div>
