@@ -1,3 +1,4 @@
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
@@ -150,6 +151,7 @@ export default function Index() {
     }
   };
 
+  const headerHidden = useHideOnScroll();
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Decorative background */}
@@ -162,7 +164,7 @@ export default function Index() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/3 blur-3xl" />
       </div>
       {/* Header */}
-      <header className="sticky top-0 overflow-hidden bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 z-40 shadow-md border-b border-secondary/30">
+      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} overflow-hidden bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 z-40 shadow-md border-b border-secondary/30`}>
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
