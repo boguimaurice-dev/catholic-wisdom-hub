@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://assistant-rech-catho.mbbm.tech/sitemap.xml
+Sitemap: https://aoc-scriptorium.lovable.app/sitemap.xml
