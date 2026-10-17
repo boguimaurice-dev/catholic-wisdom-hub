@@ -19,6 +19,50 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deepen, setDeepen] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const deepenForm = (scroll: boolean) => (
+    <>
+      <p className="font-serif text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+        <Search className="w-4 h-4" /> Approfondir cette synthèse
+      </p>
+      <div className={`flex gap-2 mb-2 ${scroll ? "overflow-x-auto whitespace-nowrap pb-1" : "flex-wrap"}`}>
+        {["Développer les sources bibliques", "Que disent les Pères de l'Église ?", "Applications concrètes pour la vie de prière"].map((s) => (
+          <button
+            key={s}
+            type="button"
+            disabled={deepenDisabled}
+            onClick={() => { onDeepen?.(s); setDrawerOpen(false); }}
+            className="text-xs px-2.5 py-1 rounded-full border border-secondary/40 text-primary hover:bg-secondary/15 disabled:opacity-50"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!deepen.trim()) return;
+          onDeepen?.(deepen);
+          setDeepen("");
+          setDrawerOpen(false);
+        }}
+        className="flex gap-2 items-end"
+      >
+        <Textarea
+          value={deepen}
+          onChange={(e) => setDeepen(e.target.value)}
+          placeholder="Quel point voulez-vous approfondir ?"
+          className="flex-1 min-h-[40px] max-h-28 resize-none text-sm bg-card"
+          disabled={deepenDisabled}
+          autoFocus={scroll}
+        />
+        <Button type="submit" size="sm" disabled={deepenDisabled || !deepen.trim()} className="h-10" aria-label="Approfondir">
+          <Send className="w-4 h-4" />
+        </Button>
+      </form>
+    </>
+  );
 
   const generatePlainText = () => {
     let text = `CONSULTATION THÉOLOGIQUE\n`;
