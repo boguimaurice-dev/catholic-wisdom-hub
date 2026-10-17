@@ -18,13 +18,11 @@ serve(async (req) => {
 
     const body = await req.text();
 
-    // Verify signature
+    // Verify signature (required)
     const signature = req.headers.get("x-paystack-signature");
-    if (signature) {
-      const hash = createHmac("sha512", PAYSTACK_SECRET_KEY).update(body).toString();
-      if (hash !== signature) {
-        return new Response("Invalid signature", { status: 401 });
-      }
+    const hash = createHmac("sha512", PAYSTACK_SECRET_KEY).update(body).digest("hex");
+    if (!signature || hash !== signature) {
+      return new Response("Invalid signature", { status: 401, headers: corsHeaders });
     }
 
     const event = JSON.parse(body);
