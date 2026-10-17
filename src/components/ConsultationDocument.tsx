@@ -3,17 +3,21 @@ import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 import { ConsultationResult, EXPERTS_CONFIG } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, FileText, Code, FileType, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, Copy, FileText, Code, FileType, Check, ChevronDown, ChevronUp, Search, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
   question: string;
+  onDeepen?: (point: string) => void;
+  deepenDisabled?: boolean;
 }
 
-export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
+export function ConsultationDocument({ result, question, onDeepen, deepenDisabled }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deepen, setDeepen] = useState("");
 
   const generatePlainText = () => {
     let text = `CONSULTATION THÉOLOGIQUE\n`;
@@ -169,6 +173,47 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
           <ReactMarkdown>{result.synthesis}</ReactMarkdown>
         </div>
       </div>
+
+      {onDeepen && (
+        <div className="border-t border-secondary/30 bg-secondary/5 p-3 sm:p-4">
+          <p className="font-serif text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+            <Search className="w-4 h-4" /> Approfondir cette synthèse
+          </p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {["Développer les sources bibliques", "Que disent les Pères de l'Église ?", "Applications concrètes pour la vie de prière"].map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={deepenDisabled}
+                onClick={() => onDeepen(s)}
+                className="text-xs px-2.5 py-1 rounded-full border border-secondary/40 text-primary hover:bg-secondary/15 disabled:opacity-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!deepen.trim()) return;
+              onDeepen(deepen);
+              setDeepen("");
+            }}
+            className="flex gap-2 items-end"
+          >
+            <Textarea
+              value={deepen}
+              onChange={(e) => setDeepen(e.target.value)}
+              placeholder="Quel point voulez-vous approfondir ?"
+              className="flex-1 min-h-[40px] max-h-28 resize-none text-sm bg-card"
+              disabled={deepenDisabled}
+            />
+            <Button type="submit" size="sm" disabled={deepenDisabled || !deepen.trim()} className="h-10" aria-label="Approfondir">
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+        </div>
+      )}
 
       {/* Toggle détails experts */}
       <div className="border-t border-primary/20">
