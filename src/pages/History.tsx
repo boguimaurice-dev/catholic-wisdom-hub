@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr, enUS, es, pt } from "date-fns/locale";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { TTSControls } from "@/components/TTSControls";
+import { useTTS } from "@/hooks/useVoice";
 
 const dateLocales = { fr, en: enUS, es, pt };
 
@@ -31,6 +33,8 @@ export default function History() {
   const [consultations, setConsultations] = useState<SavedConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const tts = useTTS();
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchConsultations();
@@ -150,6 +154,16 @@ export default function History() {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      <TTSControls
+                        className="mt-3"
+                        size="xs"
+                        status={tts.status}
+                        active={playingId === c.id}
+                        onListen={() => { setPlayingId(c.id); tts.speak(c.synthesis); }}
+                        onPause={tts.pause}
+                        onResume={tts.resume}
+                        onStop={() => { tts.stop(); setPlayingId(null); }}
+                      />
                     </div>
                   )}
                 </motion.div>
