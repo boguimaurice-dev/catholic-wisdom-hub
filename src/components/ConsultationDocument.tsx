@@ -175,45 +175,36 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
         </div>
       </div>
 
-      {onDeepen && (
-        <div className={`border-t border-secondary/30 p-3 sm:p-4 ${stickyDeepen ? "sticky bottom-0 z-30 bg-card/95 backdrop-blur-md shadow-[0_-4px_12px_-4px_hsl(var(--primary)/0.25)] rounded-b-xl" : "bg-secondary/5"}`}>
-          <p className="font-serif text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-            <Search className="w-4 h-4" /> Approfondir cette synthèse
-          </p>
-          <div className={`flex gap-2 mb-2 ${stickyDeepen ? "overflow-x-auto whitespace-nowrap pb-1" : "flex-wrap"}`}>
-            {["Développer les sources bibliques", "Que disent les Pères de l'Église ?", "Applications concrètes pour la vie de prière"].map((s) => (
-              <button
-                key={s}
-                type="button"
-                disabled={deepenDisabled}
-                onClick={() => onDeepen(s)}
-                className="text-xs px-2.5 py-1 rounded-full border border-secondary/40 text-primary hover:bg-secondary/15 disabled:opacity-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!deepen.trim()) return;
-              onDeepen(deepen);
-              setDeepen("");
-            }}
-            className="flex gap-2 items-end"
+      {onDeepen && stickyDeepen && !drawerOpen && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="sticky bottom-0 z-30 w-full h-10 flex items-center justify-center gap-2 border-t border-secondary/40 bg-card/95 backdrop-blur-md rounded-b-xl font-serif text-sm font-semibold text-primary shadow-[0_-4px_12px_-4px_hsl(var(--primary)/0.25)]"
+        >
+          <Search className="w-4 h-4" /> Approfondir cette synthèse <ChevronUp className="w-4 h-4" />
+        </button>
+      )}
+
+      {onDeepen && stickyDeepen && drawerOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-background/50 backdrop-blur-[2px]" onClick={() => setDrawerOpen(false)} />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="fixed inset-x-0 bottom-0 z-50 max-w-3xl mx-auto bg-card border-t-2 border-secondary/50 rounded-t-2xl shadow-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
-            <Textarea
-              value={deepen}
-              onChange={(e) => setDeepen(e.target.value)}
-              placeholder="Quel point voulez-vous approfondir ?"
-              className="flex-1 min-h-[40px] max-h-28 resize-none text-sm bg-card"
-              disabled={deepenDisabled}
-            />
-            <Button type="submit" size="sm" disabled={deepenDisabled || !deepen.trim()} className="h-10" aria-label="Approfondir">
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div>
+            <button type="button" onClick={() => setDrawerOpen(false)} className="w-full flex flex-col items-center mb-2 text-xs text-muted-foreground" aria-label="Réduire">
+              <span className="w-10 h-1 rounded-full bg-secondary/60 mb-1" />
+              <span className="flex items-center gap-1">Réduire <ChevronDown className="w-3 h-3" /></span>
+            </button>
+            {deepenForm(true)}
+          </motion.div>
+        </>
+      )}
+
+      {onDeepen && !stickyDeepen && (
+        <div className="border-t border-secondary/30 p-3 sm:p-4 bg-secondary/5">{deepenForm(false)}</div>
       )}
 
       {/* Toggle détails experts */}
