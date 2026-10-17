@@ -14,6 +14,8 @@ import { fr, enUS, es, pt } from "date-fns/locale";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TTSControls } from "@/components/TTSControls";
 import { useTTS } from "@/hooks/useVoice";
+import { useSubscription } from "@/hooks/useSubscription";
+import { consultOrchestrator } from "@/services/orchestrator";
 
 const dateLocales = { fr, en: enUS, es, pt };
 
@@ -35,6 +37,10 @@ export default function History() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const tts = useTTS();
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const { canConsult, incrementUsage, currentPlan } = useSubscription();
+  const [deepening, setDeepening] = useState(false);
+  const [deepeningId, setDeepeningId] = useState<string | null>(null);
+  const [deepenings, setDeepenings] = useState<Record<string, { point: string; result: ConsultationResult }[]>>({});
 
   useEffect(() => {
     if (user) fetchConsultations();
@@ -65,6 +71,38 @@ export default function History() {
     } else {
       setConsultations((prev) => prev.filter((c) => c.id !== id));
       toast.success(t("history.deleted"));
+    }
+  };
+
+  const handleDeepen = async (c: SavedConsultation, point: string) => {
+    if (!point.trim() || deepening) return;
+    if (!canConsult()) {
+      toast.error(t("index.limitReached").replace("{limit}", String(currentPlan?.max_consultations_per_day || 3)));
+      return;
+    }
+    const enriched = `Approfondissement de la synthèse précédente.\n\nQuestion d'origine : ${c.question}\n\nExtrait de la synthèse déjà donnée :\n${c.synthesis.slice(0, 4000)}\n\nPoint à approfondir : ${point.trim()}\n\nApprofondis précisément ce point, sans répéter toute la synthèse.`;
+    setDeepening(true);
+    setDeepeningId(c.id);
+    try {
+      const result = await consultOrchestrator(enriched, []);
+      if (!result.success) throw new Error(result.error || t("common.error"));
+      setDeepenings((prev) => ({ ...prev, [c.id]: [...(prev[c.id] || []), { point: point.trim(), result }] }));
+      if (user) {
+        await supabase.from("consultations").insert({
+          user_id: user.id,
+          question: `🔎 Approfondir : ${point.trim()} (sur : ${c.question})`.slice(0, 1000),
+          synthesis: result.synthesis,
+          expert_contributions: result.expertContributions as any,
+          selected_experts: result.analysis.selectedExperts as any,
+          analysis_reason: result.analysis.reason,
+        });
+      }
+      await incrementUsage();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setDeepening(false);
+      setDeepeningId(null);
     }
   };
 
@@ -129,7 +167,26 @@ export default function History() {
                       <ConsultationDocument
                         result={toConsultationResult(c)}
                         question={c.question}
+                        deepenDisabled={deepening}
+                        onDeepen={(point) => handleDeepen(c, point)}
                       />
+                      {(deepenings[c.id] || []).map((d, i) => (
+                        <div key={i} className="space-y-2 pl-2 border-l-2 border-secondary/40">
+                          <p className="text-sm font-medium text-primary">🔎 Approfondir : {d.point}</p>
+                          <ConsultationDocument
+                            result={d.result}
+                            question={d.point}
+                            deepenDisabled={deepening}
+                            onDeepen={(p) => handleDeepen({ ...c, synthesis: d.result.synthesis }, p)}
+                          />
+                        </div>
+                      ))}
+                      {deepening && deepeningId === c.id && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground p-3">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Les experts approfondissent ce point…
+                        </div>
+                      )}
+
                     </div>
                   ) : (
                     <div className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors">
