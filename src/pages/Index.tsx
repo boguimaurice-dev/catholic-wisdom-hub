@@ -15,6 +15,7 @@ import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { TTSControls } from "@/components/TTSControls";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,7 +34,8 @@ export default function Index() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { isListening, startListening, stopListening } = useVoiceInput();
-  const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
+  const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking } = useTTS();
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
 
   const scrollToBottom = () => {
@@ -277,29 +279,12 @@ export default function Index() {
                           result={message.consultationResult}
                           question={messages[idx - 1]?.content || ""}
                         />
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                           className="absolute top-3 right-3 gap-1.5 h-8 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
-                           title={isSpeaking ? t("index.stop") : t("index.listen")}
-                         >
-                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? t("index.stop") : t("index.listen")}
-                         </Button>
+                         <TTSControls className="absolute top-3 right-3" status={ttsStatus} active={speakingIdx === idx} onListen={() => { setSpeakingIdx(idx); speak(message.content); }} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
                         <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                           className="absolute top-2 right-2 gap-1.5 h-7 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
-                         >
-                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? t("index.stop") : t("index.listen")}
-                         </Button>
+                         <TTSControls className="absolute top-2 right-2" status={ttsStatus} active={speakingIdx === idx} onListen={() => { setSpeakingIdx(idx); speak(message.content); }} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
                       </div>
                     )}
                   </motion.div>

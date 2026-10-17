@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
@@ -47,102 +47,145 @@ export function useVoiceInput() {
   return { isListening, startListening, stopListening };
 }
 
+export type TTSStatus = "idle" | "speaking" | "paused";
+
+function cleanForSpeech(text: string) {
+  return text
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/#/g, "")
+    .replace(/\*+/g, "")
+    .replace(/_{1,2}/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`{1,3}[^`]*`{1,3}/g, "")
+    .replace(/>\s*/g, "")
+    .replace(/^[-•]\s*/gm, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitChunks(clean: string) {
+  const sentences = clean.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [clean];
+  const chunks: string[] = [];
+  let current = "";
+  for (const s of sentences) {
+    if ((current + s).length > 200 && current) { chunks.push(current.trim()); current = s; }
+    else current += s;
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
 export function useTTS() {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const cancelledRef = useRef(false);
+  const [status, setStatus] = useState<TTSStatus>("idle");
+  const chunksRef = useRef<string[]>([]);
+  const indexRef = useRef(0);
+  const tokenRef = useRef(0);
+  const statusRef = useRef<TTSStatus>("idle");
+  const wakeLockRef = useRef<any>(null);
+
+  const setS = (s: TTSStatus) => { statusRef.current = s; setStatus(s); };
+
+  const acquireWake = async () => {
+    try {
+      if ("wakeLock" in navigator && !wakeLockRef.current) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+        wakeLockRef.current.addEventListener?.("release", () => { wakeLockRef.current = null; });
+      }
+    } catch { /* ignoré */ }
+  };
+  const releaseWake = () => {
+    try { wakeLockRef.current?.release?.(); } catch { /* ignoré */ }
+    wakeLockRef.current = null;
+  };
+
+  const playFrom = useCallback((start: number) => {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const token = ++tokenRef.current;
+    const voice = synth.getVoices().find((v) => v.lang.startsWith("fr")) || null;
+
+    const speakChunk = (i: number) => {
+      if (token !== tokenRef.current) return;
+      if (i >= chunksRef.current.length) {
+        indexRef.current = 0; setS("idle"); releaseWake(); return;
+      }
+      indexRef.current = i;
+      const u = new SpeechSynthesisUtterance(chunksRef.current[i]);
+      u.lang = "fr-FR"; u.rate = 0.95; u.pitch = 1;
+      if (voice) u.voice = voice;
+      u.onend = () => { if (token === tokenRef.current) speakChunk(i + 1); };
+      u.onerror = (e: any) => {
+        if (token !== tokenRef.current) return;
+        if (e?.error === "canceled" || e?.error === "interrupted") return;
+        speakChunk(i + 1);
+      };
+      synth.speak(u);
+    };
+    setS("speaking");
+    acquireWake();
+    speakChunk(start);
+  }, []);
 
   const speak = useCallback((text: string) => {
     if (!window.speechSynthesis) {
       toast.error("La synthèse vocale n'est pas supportée par votre navigateur.");
       return;
     }
-
-    const cleanText = text
-      .replace(/#{1,6}\s*/g, "")
-      .replace(/\*\*?/g, "")
-      .replace(/_{1,2}/g, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/`{1,3}[^`]*`{1,3}/g, "")
-      .replace(/>\s*/g, "")
-      .replace(/^[-•]\s*/gm, "")
-      .replace(/\n+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!cleanText) return;
-
-    window.speechSynthesis.cancel();
-    cancelledRef.current = false;
-
-    // Découper en chunks (~200 car.) — Chrome coupe la synthèse au-delà de ~15s
-    const sentences = cleanText.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [cleanText];
-    const chunks: string[] = [];
-    let current = "";
-    for (const s of sentences) {
-      if ((current + s).length > 200 && current) {
-        chunks.push(current.trim());
-        current = s;
-      } else {
-        current += s;
-      }
-    }
-    if (current.trim()) chunks.push(current.trim());
-
-    const pickVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      return voices.find((v) => v.lang.startsWith("fr")) || null;
-    };
-
-    const startSpeaking = () => {
-      const frenchVoice = pickVoice();
-
-      const speakChunk = (i: number) => {
-        if (cancelledRef.current || i >= chunks.length) {
-          setIsSpeaking(false);
-          return;
-        }
-        const u = new SpeechSynthesisUtterance(chunks[i]);
-        u.lang = "fr-FR";
-        u.rate = 0.95;
-        u.pitch = 1;
-        if (frenchVoice) u.voice = frenchVoice;
-        u.onend = () => speakChunk(i + 1);
-        u.onerror = (e: any) => {
-          if (e?.error === "canceled" || e?.error === "interrupted") return;
-          console.error("TTS error:", e?.error);
-          speakChunk(i + 1);
-        };
-        window.speechSynthesis.speak(u);
-      };
-
-      setIsSpeaking(true);
-      speakChunk(0);
-    };
-
-    // Si les voix ne sont pas encore chargées, attendre
+    const clean = cleanForSpeech(text);
+    if (!clean) return;
+    chunksRef.current = splitChunks(clean);
+    indexRef.current = 0;
     if (window.speechSynthesis.getVoices().length === 0) {
-      const handler = () => {
-        window.speechSynthesis.onvoiceschanged = null;
-        startSpeaking();
-      };
-      window.speechSynthesis.onvoiceschanged = handler;
-      // fallback si l'événement ne se déclenche pas
-      setTimeout(() => {
-        if (!cancelledRef.current && !window.speechSynthesis.speaking) {
-          window.speechSynthesis.onvoiceschanged = null;
-          startSpeaking();
-        }
-      }, 250);
-    } else {
-      startSpeaking();
-    }
+      let started = false;
+      const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; playFrom(0); };
+      window.speechSynthesis.onvoiceschanged = go;
+      setTimeout(go, 250);
+    } else playFrom(0);
+  }, [playFrom]);
+
+  const pause = useCallback(() => {
+    if (statusRef.current !== "speaking") return;
+    tokenRef.current++;
+    window.speechSynthesis.cancel();
+    setS("paused");
+    releaseWake();
   }, []);
+
+  const resume = useCallback(() => {
+    if (!chunksRef.current.length) return;
+    playFrom(indexRef.current);
+  }, [playFrom]);
 
   const stop = useCallback(() => {
-    cancelledRef.current = true;
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
+    tokenRef.current++;
+    window.speechSynthesis?.cancel();
+    indexRef.current = 0;
+    setS("idle");
+    releaseWake();
   }, []);
 
-  return { isSpeaking, speak, stop };
+  // Retour d'écran : si le navigateur a coupé la lecture, passer en pause pour pouvoir reprendre
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      if (statusRef.current === "speaking") {
+        const synth = window.speechSynthesis;
+        if (!synth.speaking || synth.paused) {
+          tokenRef.current++;
+          synth.cancel();
+          setS("paused");
+        } else acquireWake();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      tokenRef.current++;
+      window.speechSynthesis?.cancel();
+      releaseWake();
+    };
+  }, []);
+
+  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop };
 }
