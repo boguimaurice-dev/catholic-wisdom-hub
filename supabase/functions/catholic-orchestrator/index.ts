@@ -205,10 +205,38 @@ async function callClaude(messages: Message[]): Promise<string | null> {
   }
 }
 
+async function callOpenAI(messages: Message[]): Promise<string | null> {
+  const key = Deno.env.get("OPENAI_API_KEY");
+  if (!key) return null;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+      }),
+    });
+    if (!response.ok) {
+      console.warn("OpenAI unavailable:", response.status, await response.text());
+      return null;
+    }
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.warn("OpenAI call failed:", e);
+    return null;
+  }
+}
+
 async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
-  // Priorité : DeepSeek -> Claude -> Lovable AI Gateway
+  // Priorité : DeepSeek -> OpenAI -> Claude -> Lovable AI Gateway
   const deepseek = await callDeepSeek(messages);
   if (deepseek) return deepseek;
+
+  const openai = await callOpenAI(messages);
+  if (openai) return openai;
 
   const claude = await callClaude(messages);
   if (claude) return claude;
