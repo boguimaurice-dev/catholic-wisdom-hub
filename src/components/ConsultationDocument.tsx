@@ -12,9 +12,10 @@ interface ConsultationDocumentProps {
   question: string;
   onDeepen?: (point: string) => void;
   deepenDisabled?: boolean;
+  stickyDeepen?: boolean;
 }
 
-export function ConsultationDocument({ result, question, onDeepen, deepenDisabled }: ConsultationDocumentProps) {
+export function ConsultationDocument({ result, question, onDeepen, deepenDisabled, stickyDeepen }: ConsultationDocumentProps) {
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deepen, setDeepen] = useState("");
@@ -101,10 +102,10 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-cream rounded-xl border-2 border-primary/30 overflow-hidden"
+      className={`bg-cream rounded-xl border-2 border-primary/30 ${stickyDeepen ? "" : "overflow-hidden"}`}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-3 sm:p-4">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-3 sm:p-4 rounded-t-[10px]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="font-serif text-lg sm:text-xl font-bold flex items-center gap-2">
@@ -175,11 +176,11 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
       </div>
 
       {onDeepen && (
-        <div className="border-t border-secondary/30 bg-secondary/5 p-3 sm:p-4">
+        <div className={`border-t border-secondary/30 p-3 sm:p-4 ${stickyDeepen ? "sticky bottom-0 z-30 bg-card/95 backdrop-blur-md shadow-[0_-4px_12px_-4px_hsl(var(--primary)/0.25)] rounded-b-xl" : "bg-secondary/5"}`}>
           <p className="font-serif text-sm font-semibold text-primary mb-2 flex items-center gap-2">
             <Search className="w-4 h-4" /> Approfondir cette synthèse
           </p>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className={`flex gap-2 mb-2 ${stickyDeepen ? "overflow-x-auto whitespace-nowrap pb-1" : "flex-wrap"}`}>
             {["Développer les sources bibliques", "Que disent les Pères de l'Église ?", "Applications concrètes pour la vie de prière"].map((s) => (
               <button
                 key={s}
