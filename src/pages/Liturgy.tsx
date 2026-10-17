@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTTS } from "@/hooks/useVoice";
+import { TTSControls } from "@/components/TTSControls";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,7 +30,7 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-
 
 export default function Liturgy() {
   const { t, language } = useLanguage();
-  const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
+  const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking } = useTTS();
   const [data, setData] = useState<LiturgyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -227,15 +228,7 @@ export default function Liturgy() {
                   <Sparkles className="w-5 h-5 text-secondary" />
                   Méditation homilétique
                 </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => (isSpeaking ? stopSpeaking() : speak(data.meditation))}
-                  className="gap-1.5"
-                >
-                  {isSpeaking ? <VolumeX className="w-4 h-4" /> : <AudioLines className="w-4 h-4" />}
-                  {isSpeaking ? "Arrêter" : "Écouter"}
-                </Button>
+                <TTSControls status={ttsStatus} active onListen={() => speak(data.meditation)} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
               </div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
