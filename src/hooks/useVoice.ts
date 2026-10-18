@@ -115,6 +115,7 @@ export function useTTS() {
         return;
       }
       indexRef.current = i;
+      setProgress({ i, n: chunksRef.current.length });
       if (keyRef.current) try { localStorage.setItem(keyRef.current, String(i)); } catch { /* */ }
       const u = new SpeechSynthesisUtterance(chunksRef.current[i]);
       u.lang = "fr-FR"; u.rate = 0.95; u.pitch = 1;
@@ -172,6 +173,7 @@ export function useTTS() {
     if (!chunksRef.current.length) return;
     const n = Math.max(0, Math.min(chunksRef.current.length - 1, indexRef.current + delta));
     indexRef.current = n;
+    setProgress({ i: n, n: chunksRef.current.length });
     if (keyRef.current) try { localStorage.setItem(keyRef.current, String(n)); } catch { /* */ }
     if (statusRef.current === "speaking") playFrom(n);
   }, [playFrom]);
@@ -206,5 +208,5 @@ export function useTTS() {
     };
   }, []);
 
-  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop };
+  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop, skip, progress };
 }
