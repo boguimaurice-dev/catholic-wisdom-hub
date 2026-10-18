@@ -83,6 +83,8 @@ export function useTTS() {
   const tokenRef = useRef(0);
   const statusRef = useRef<TTSStatus>("idle");
   const wakeLockRef = useRef<any>(null);
+  const keyRef = useRef<string | null>(null);
+  const [progress, setProgress] = useState({ i: 0, n: 0 });
 
   const setS = (s: TTSStatus) => { statusRef.current = s; setStatus(s); };
 
@@ -108,9 +110,13 @@ export function useTTS() {
     const speakChunk = (i: number) => {
       if (token !== tokenRef.current) return;
       if (i >= chunksRef.current.length) {
-        indexRef.current = 0; setS("idle"); releaseWake(); return;
+        indexRef.current = 0; setS("idle"); releaseWake();
+        if (keyRef.current) try { localStorage.removeItem(keyRef.current); } catch { /* */ }
+        return;
       }
       indexRef.current = i;
+      setProgress({ i, n: chunksRef.current.length });
+      if (keyRef.current) try { localStorage.setItem(keyRef.current, String(i)); } catch { /* */ }
       const u = new SpeechSynthesisUtterance(chunksRef.current[i]);
       u.lang = "fr-FR"; u.rate = 0.95; u.pitch = 1;
       if (voice) u.voice = voice;
@@ -127,7 +133,7 @@ export function useTTS() {
     speakChunk(start);
   }, []);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, saveKey?: string) => {
     if (!window.speechSynthesis) {
       toast.error("La synthèse vocale n'est pas supportée par votre navigateur.");
       return;
@@ -135,13 +141,19 @@ export function useTTS() {
     const clean = cleanForSpeech(text);
     if (!clean) return;
     chunksRef.current = splitChunks(clean);
-    indexRef.current = 0;
+    keyRef.current = saveKey ? `tts-pos:${saveKey}` : null;
+    let start = 0;
+    if (keyRef.current) {
+      const s = parseInt(localStorage.getItem(keyRef.current) || "0", 10);
+      if (s > 0 && s < chunksRef.current.length) start = s;
+    }
+    indexRef.current = start;
     if (window.speechSynthesis.getVoices().length === 0) {
       let started = false;
-      const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; playFrom(0); };
+      const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; playFrom(start); };
       window.speechSynthesis.onvoiceschanged = go;
       setTimeout(go, 250);
-    } else playFrom(0);
+    } else playFrom(start);
   }, [playFrom]);
 
   const pause = useCallback(() => {
@@ -155,6 +167,15 @@ export function useTTS() {
   const resume = useCallback(() => {
     if (!chunksRef.current.length) return;
     playFrom(indexRef.current);
+  }, [playFrom]);
+
+  const skip = useCallback((delta: number) => {
+    if (!chunksRef.current.length) return;
+    const n = Math.max(0, Math.min(chunksRef.current.length - 1, indexRef.current + delta));
+    indexRef.current = n;
+    setProgress({ i: n, n: chunksRef.current.length });
+    if (keyRef.current) try { localStorage.setItem(keyRef.current, String(n)); } catch { /* */ }
+    if (statusRef.current === "speaking") playFrom(n);
   }, [playFrom]);
 
   const stop = useCallback(() => {
@@ -187,5 +208,5 @@ export function useTTS() {
     };
   }, []);
 
-  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop };
+  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop, skip, progress };
 }
