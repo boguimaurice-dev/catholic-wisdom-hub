@@ -30,7 +30,10 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-
 
 export default function Liturgy() {
   const { t, language } = useLanguage();
-  const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking } = useTTS();
+  const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking, skip, progress } = useTTS();
+  const [fontSize, setFontSize] = useState<number>(() => Number(localStorage.getItem("liturgy:font")) || 19);
+  const changeFont = (d: number) => setFontSize((f) => { const n = Math.max(15, Math.min(28, f + d)); localStorage.setItem("liturgy:font", String(n)); return n; });
+  const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n\n").trim();
   const [data, setData] = useState<LiturgyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -140,7 +143,7 @@ export default function Liturgy() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <main className="max-w-3xl mx-auto px-3 py-4 sm:p-6 space-y-6 overflow-x-hidden">
         {/* Date picker */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-card border border-border rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -153,7 +156,11 @@ export default function Liturgy() {
             onChange={(e) => setDate(e.target.value)}
             className="bg-background border border-border rounded-md px-3 py-1.5 text-sm focus:border-secondary focus:ring-1 focus:ring-secondary outline-none"
           />
-          <Button size="sm" onClick={() => load(date)} disabled={loading} className="ml-auto">
+          <div className="flex items-center gap-1 sm:ml-auto" aria-label="Taille du texte">
+            <Button size="sm" variant="outline" onClick={() => changeFont(-1)} aria-label="Réduire le texte">A−</Button>
+            <Button size="sm" variant="outline" onClick={() => changeFont(1)} aria-label="Agrandir le texte">A+</Button>
+          </div>
+          <Button size="sm" onClick={() => load(date)} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Charger"}
           </Button>
         </div>
@@ -196,7 +203,7 @@ export default function Liturgy() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-card border border-border rounded-xl p-5 shadow-sm"
+                  className="bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm min-w-0"
                 >
                   <header className="mb-3 pb-3 border-b border-border/60">
                     <p className="text-xs uppercase tracking-wide text-secondary font-semibold">
@@ -210,12 +217,12 @@ export default function Liturgy() {
                     )}
                   </header>
                   {l.refrain && (
-                    <p className="text-sm font-medium text-primary/80 italic mb-2">
+                    <p className="font-serif font-semibold text-primary/90 italic mb-3 break-words" style={{ fontSize }}>
                       R/ {l.refrain}
                     </p>
                   )}
-                  <p className="text-sm sm:text-base leading-relaxed whitespace-pre-line">
-                    {l.contenu}
+                  <p className="font-serif leading-[1.6] whitespace-pre-line break-words text-foreground" style={{ fontSize }}>
+                    {tidy(l.contenu)}
                   </p>
                 </motion.article>
               ))}
@@ -223,20 +230,20 @@ export default function Liturgy() {
 
             {/* Méditation */}
             <section>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h2 className="font-serif text-2xl text-primary flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-secondary" />
                   Méditation homilétique
                 </h2>
-                <TTSControls status={ttsStatus} active onListen={() => speak(data.meditation)} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
+                <TTSControls status={ttsStatus} active onListen={() => speak(data.meditation, `med:${language}:${data.date}`)} onSkip={skip} progress={progress} listenLabel={localStorage.getItem(`tts-pos:med:${language}:${data.date}`) ? "Continuer" : "Écouter"} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
               </div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-secondary/30 rounded-xl p-6 shadow-sm prose prose-sm sm:prose-base max-w-none"
+                className="bg-card border border-secondary/30 rounded-xl p-4 sm:p-6 shadow-sm min-w-0"
               >
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-line text-foreground">
-                  {data.meditation}
+                <p className="font-serif leading-[1.65] whitespace-pre-line break-words text-foreground" style={{ fontSize }}>
+                  {tidy(data.meditation)}
                 </p>
               </motion.div>
             </section>
