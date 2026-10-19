@@ -31,6 +31,21 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/liturgy-
 export default function Liturgy() {
   const { t, language } = useLanguage();
   const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking, skip, progress } = useTTS();
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const play = (key: string, text: string) => { setActiveKey(key); speak(text, key); };
+  const ttsFor = (key: string, text: string) => (
+    <TTSControls
+      status={activeKey === key ? ttsStatus : "idle"}
+      active={activeKey === key}
+      onListen={() => play(key, text)}
+      onSkip={skip}
+      progress={activeKey === key ? progress : undefined}
+      listenLabel={localStorage.getItem(`tts-pos:${key}`) ? "Continuer" : "Écouter"}
+      onPause={pauseSpeaking}
+      onResume={resumeSpeaking}
+      onStop={stopSpeaking}
+    />
+  );
   const [fontSize, setFontSize] = useState<number>(() => Number(localStorage.getItem("liturgy:font")) || 19);
   const changeFont = (d: number) => setFontSize((f) => { const n = Math.max(15, Math.min(28, f + d)); localStorage.setItem("liturgy:font", String(n)); return n; });
   const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n\n").trim();
@@ -205,7 +220,7 @@ export default function Liturgy() {
                   transition={{ delay: i * 0.05 }}
                   className="bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm min-w-0"
                 >
-                  <header className="mb-3 pb-3 border-b border-border/60">
+                  <header className="mb-3 pb-3 border-b border-border/60 space-y-2">
                     <p className="text-xs uppercase tracking-wide text-secondary font-semibold">
                       {labelFor(l.type)}
                     </p>
@@ -215,6 +230,7 @@ export default function Liturgy() {
                     {l.titre && (
                       <p className="font-serif text-base text-primary mt-1 italic">« {l.titre} »</p>
                     )}
+                    {ttsFor(`lec:${language}:${data.date}:${i}`, `${labelFor(l.type)}. ${l.reference || ""}. ${l.refrain ? "Refrain : " + l.refrain + ". " : ""}${tidy(l.contenu)}`)}
                   </header>
                   {l.refrain && (
                     <p className="font-serif font-semibold text-primary/90 italic mb-3 break-words" style={{ fontSize }}>
@@ -235,7 +251,7 @@ export default function Liturgy() {
                   <Sparkles className="w-5 h-5 text-secondary" />
                   Méditation homilétique
                 </h2>
-                <TTSControls status={ttsStatus} active onListen={() => speak(data.meditation, `med:${language}:${data.date}`)} onSkip={skip} progress={progress} listenLabel={localStorage.getItem(`tts-pos:med:${language}:${data.date}`) ? "Continuer" : "Écouter"} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
+                {ttsFor(`med:${language}:${data.date}`, data.meditation)}
               </div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
