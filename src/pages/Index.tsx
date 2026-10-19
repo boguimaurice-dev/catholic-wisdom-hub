@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { InstallButton } from "@/components/InstallButton";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -225,6 +226,7 @@ export default function Index() {
               )}
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
+              <InstallButton compact />
               <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
