@@ -172,6 +172,19 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
             <Button
               size="sm"
               variant="secondary"
+              onClick={() => {
+                const url = "https://aoc-scriptorium.lovable.app/?utm_source=whatsapp&utm_medium=social";
+                const text = `J'ai trouvé cette réponse catholique très éclairante sur l'AOC (8 experts : Bible, Catéchisme, Pères de l'Église, Liturgie…). Essayez gratuitement : ${url}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+              }}
+              className="text-xs"
+            >
+              <Send className="w-3 h-3 mr-1" />
+              Partager
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={() => downloadFile(generatePlainText(), "consultation.txt", "text/plain")}
               className="text-xs"
             >
