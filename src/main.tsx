@@ -15,6 +15,9 @@ if ("serviceWorker" in navigator) {
   if (import.meta.env.PROD && !isPreview) {
     registerAppUpdates();
   } else {
-    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => {
+      const worker = r.active ?? r.waiting ?? r.installing;
+      if (worker && new URL(worker.scriptURL).pathname === "/sw.js") void r.unregister();
+    })).catch(() => {});
   }
 }

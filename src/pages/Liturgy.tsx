@@ -48,7 +48,7 @@ export default function Liturgy() {
     />
   );
   const { fontSize, changeFont, readingRef } = useReadingZoom();
-  const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n\n").trim();
+  const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/^[ \t]+|[ \t]+$/gm, "").replace(/\n{2,}/g, "\n\n").trim();
   const [data, setData] = useState<LiturgyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
