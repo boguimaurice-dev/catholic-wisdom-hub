@@ -99,6 +99,20 @@
 }
 
 /* Custom scrollbar */
+.liturgy-reading {
+  /* Two-finger gestures resize text; single-finger scrolling remains native. */
+  touch-action: pan-y;
+  overflow-wrap: anywhere;
+}
+
+.liturgy-text {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
