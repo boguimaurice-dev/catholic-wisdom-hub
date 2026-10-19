@@ -134,26 +134,32 @@ export function useTTS() {
   }, []);
 
   const speak = useCallback((text: string, saveKey?: string) => {
-    if (!window.speechSynthesis) {
-      toast.error("La synthèse vocale n'est pas supportée par votre navigateur.");
-      return;
+    try {
+      if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+        toast.error("La lecture vocale n'est pas disponible sur ce navigateur. Essayez Chrome ou Safari.");
+        return;
+      }
+      const clean = cleanForSpeech(text || "");
+      if (!clean) return;
+      chunksRef.current = splitChunks(clean);
+      keyRef.current = saveKey ? `tts-pos:${saveKey}` : null;
+      let start = 0;
+      if (keyRef.current) {
+        const s = parseInt(localStorage.getItem(keyRef.current) || "0", 10);
+        if (s > 0 && s < chunksRef.current.length) start = s;
+      }
+      indexRef.current = start;
+      const safePlay = (s: number) => { try { playFrom(s); } catch { setS("idle"); toast.error("Lecture vocale impossible."); } };
+      if (window.speechSynthesis.getVoices().length === 0) {
+        let started = false;
+        const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; safePlay(start); };
+        window.speechSynthesis.onvoiceschanged = go;
+        setTimeout(go, 250);
+      } else safePlay(start);
+    } catch {
+      setS("idle");
+      toast.error("Lecture vocale impossible sur cet appareil.");
     }
-    const clean = cleanForSpeech(text);
-    if (!clean) return;
-    chunksRef.current = splitChunks(clean);
-    keyRef.current = saveKey ? `tts-pos:${saveKey}` : null;
-    let start = 0;
-    if (keyRef.current) {
-      const s = parseInt(localStorage.getItem(keyRef.current) || "0", 10);
-      if (s > 0 && s < chunksRef.current.length) start = s;
-    }
-    indexRef.current = start;
-    if (window.speechSynthesis.getVoices().length === 0) {
-      let started = false;
-      const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; playFrom(start); };
-      window.speechSynthesis.onvoiceschanged = go;
-      setTimeout(go, 250);
-    } else playFrom(start);
   }, [playFrom]);
 
   const pause = useCallback(() => {
