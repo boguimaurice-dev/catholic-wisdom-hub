@@ -10,6 +10,7 @@ import { useTTS } from "@/hooks/useVoice";
 import { TTSControls } from "@/components/TTSControls";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useReadingZoom } from "@/hooks/useReadingZoom";
 
 interface Lecture {
   type: string;
@@ -46,9 +47,8 @@ export default function Liturgy() {
       onStop={stopSpeaking}
     />
   );
-  const [fontSize, setFontSize] = useState<number>(() => Number(localStorage.getItem("liturgy:font")) || 19);
-  const changeFont = (d: number) => setFontSize((f) => { const n = Math.max(15, Math.min(28, f + d)); localStorage.setItem("liturgy:font", String(n)); return n; });
-  const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n\n").trim();
+  const { fontSize, changeFont, readingRef } = useReadingZoom();
+  const tidy = (t: string) => (t || "").replace(/\r/g, "").replace(/^[ \t]+|[ \t]+$/gm, "").replace(/\n{2,}/g, "\n\n").trim();
   const [data, setData] = useState<LiturgyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -137,15 +137,15 @@ export default function Liturgy() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 shadow-md border-b border-secondary/30">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-4xl mx-auto flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <Link to="/app">
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
+               <h1 className="font-serif text-lg sm:text-2xl font-bold break-words">
                 Liturgie du jour
               </h1>
               <p className="text-xs opacity-80 hidden sm:block">Textes & méditation homilétique</p>
@@ -158,7 +158,7 @@ export default function Liturgy() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-3 py-4 sm:p-6 space-y-6 overflow-x-hidden">
+      <main ref={readingRef} className="liturgy-reading max-w-3xl mx-auto px-3 py-4 sm:p-6 space-y-6 min-w-0">
         {/* Date picker */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-card border border-border rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -169,7 +169,7 @@ export default function Liturgy() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="bg-background border border-border rounded-md px-3 py-1.5 text-sm focus:border-secondary focus:ring-1 focus:ring-secondary outline-none"
+             className="bg-background border border-border rounded-md px-3 py-1.5 text-sm max-w-full min-w-0 focus:border-secondary focus:ring-1 focus:ring-secondary outline-none"
           />
           <div className="flex items-center gap-1 sm:ml-auto" aria-label="Taille du texte">
             <Button size="sm" variant="outline" onClick={() => changeFont(-1)} aria-label="Réduire le texte">A−</Button>
@@ -237,11 +237,11 @@ export default function Liturgy() {
                     {ttsFor(`lec:${language}:${data.date}:${i}`, `${labelFor(l.type)}. ${l.reference || ""}. ${l.refrain ? "Refrain : " + l.refrain + ". " : ""}${tidy(l.contenu)}`)}
                   </header>
                   {l.refrain && (
-                    <p className="font-serif font-semibold text-primary/90 italic mb-3 break-words" style={{ fontSize }}>
+                     <p className="liturgy-text font-serif font-semibold text-primary/90 italic mb-3" style={{ fontSize }}>
                       R/ {l.refrain}
                     </p>
                   )}
-                  <p className="font-serif leading-[1.6] whitespace-pre-line break-words text-foreground" style={{ fontSize }}>
+                   <p className="liturgy-text font-serif leading-[1.5] whitespace-pre-line text-foreground" style={{ fontSize }}>
                     {tidy(l.contenu)}
                   </p>
                 </motion.article>
@@ -262,7 +262,7 @@ export default function Liturgy() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-card border border-secondary/30 rounded-xl p-4 sm:p-6 shadow-sm min-w-0"
               >
-                <p className="font-serif leading-[1.65] whitespace-pre-line break-words text-foreground" style={{ fontSize }}>
+                 <p className="liturgy-text font-serif leading-[1.5] whitespace-pre-line text-foreground" style={{ fontSize }}>
                   {tidy(data.meditation)}
                 </p>
               </motion.div>
