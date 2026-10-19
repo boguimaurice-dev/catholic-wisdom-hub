@@ -1,3 +1,4 @@
+// @vitest-environment-options {"url":"https://aoc-scriptorium.lovable.app"}
 import { afterEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ register: vi.fn(), toast: vi.fn(), update: vi.fn() }));
 vi.mock("virtual:pwa-register", () => ({ registerSW: mocks.register }));
