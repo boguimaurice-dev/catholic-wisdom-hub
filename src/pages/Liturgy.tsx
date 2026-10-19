@@ -208,6 +208,10 @@ export default function Liturgy() {
 
             {/* Lectures */}
             <section className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm text-muted-foreground">Tout écouter (lectures + méditation)</span>
+                {ttsFor(`all:${language}:${data.date}`, data.lectures.map((l) => `${labelFor(l.type)}. ${l.reference || ""}. ${tidy(l.contenu)}`).join(" ") + " Méditation homilétique. " + data.meditation)}
+              </div>
               <h2 className="font-serif text-2xl text-primary flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-secondary" />
                 Textes du jour
