@@ -314,7 +314,7 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
                       </p>
                     </div>
                   </div>
-                  <div className="prose prose-sm max-w-none text-foreground/90">
+                  <div style={{ fontSize }} className="liturgy-text prose max-w-none leading-[1.6] text-foreground/90 [&_*]:max-w-full [&_*]:break-words">
                     <ReactMarkdown>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>
