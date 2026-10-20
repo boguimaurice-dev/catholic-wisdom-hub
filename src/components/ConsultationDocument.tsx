@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Copy, FileText, Code, FileType, Check, ChevronDown, ChevronUp, Search, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useReadingZoom } from "@/hooks/useReadingZoom";
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
@@ -16,6 +17,7 @@ interface ConsultationDocumentProps {
 }
 
 export function ConsultationDocument({ result, question, onDeepen, deepenDisabled, stickyDeepen }: ConsultationDocumentProps) {
+  const { fontSize, changeFont, readingRef } = useReadingZoom();
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deepen, setDeepen] = useState("");
@@ -226,8 +228,13 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
       </div>
 
       {/* Synthèse */}
-      <div className="p-4 sm:p-6">
-        <div className="prose prose-sm sm:prose max-w-none prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-strong:text-primary">
+      <div ref={readingRef} className="p-4 sm:p-6 liturgy-reading overflow-x-hidden min-w-0">
+        <div className="flex items-center justify-end gap-2 mb-3">
+          <Button size="sm" variant="outline" onClick={() => changeFont(-2)} aria-label="Réduire le texte">A−</Button>
+          <span className="text-xs text-muted-foreground w-10 text-center">{fontSize}px</span>
+          <Button size="sm" variant="outline" onClick={() => changeFont(2)} aria-label="Agrandir le texte">A+</Button>
+        </div>
+        <div style={{ fontSize }} className="liturgy-text prose max-w-none leading-[1.6] prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-strong:text-primary [&_*]:max-w-full [&_*]:break-words">
           <ReactMarkdown>{result.synthesis}</ReactMarkdown>
         </div>
       </div>
@@ -307,7 +314,7 @@ export function ConsultationDocument({ result, question, onDeepen, deepenDisable
                       </p>
                     </div>
                   </div>
-                  <div className="prose prose-sm max-w-none text-foreground/90">
+                  <div style={{ fontSize }} className="liturgy-text prose max-w-none leading-[1.6] text-foreground/90 [&_*]:max-w-full [&_*]:break-words">
                     <ReactMarkdown>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>
