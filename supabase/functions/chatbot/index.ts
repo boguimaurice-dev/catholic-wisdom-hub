@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { streamClaude, type ChatMessage } from "../_shared/claude.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,114 +12,45 @@ Tu réponds toujours en français, avec charité et respect. Tu cites les Écrit
 
 Sois concis mais complet. Utilise le markdown pour structurer tes réponses.`;
 
-// --- Claude (Anthropic) : moteur principal -----------------------------------
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
-const CLAUDE_MAX_TOKENS = 4096;
-
-function getAnthropicKey(): string | null {
-  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
-}
-
-type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
-
-/** Formate un morceau de texte au format SSE attendu par le front (style OpenAI). */
-function sseEvent(text: string): string {
-  return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
-}
-
-/**
- * Diffusion Claude en streaming, traduite au format SSE OpenAI
- * pour rester compatible avec le composant Chatbot.
- * Retourne null si Claude est indisponible (le gateway Lovable prend alors le relais).
- */
-async function streamClaude(messages: ChatMessage[]): Promise<ReadableStream<Uint8Array> | null> {
-  const key = getAnthropicKey();
-  if (!key) {
-    console.warn("Chatbot : ANTHROPIC_API_KEY absente, repli sur le gateway.");
-    return null;
-  }
-
-  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-  const rest = messages.filter((m) => m.role !== "system");
-
-  let response: Response;
-  try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: CLAUDE_MAX_TOKENS,
-        stream: true,
-        ...(system ? { system } : {}),
-        messages: rest.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
-  } catch (e) {
-    console.warn("Chatbot : appel Claude impossible, repli sur le gateway.", e);
-    return null;
-  }
-
-  if (!response.ok || !response.body) {
-    console.warn("Chatbot : Claude indisponible, repli sur le gateway.", response.status, (await response.text().catch(() => "")).slice(0, 300));
-    return null;
-  }
-
-  const upstream = response.body;
+/** Convertit un flux de texte brut en SSE au format attendu par le front (style OpenAI). */
+function toOpenAISse(textStream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
-  let readerRef: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  const decoder = new TextDecoder();
+  const event = (text: string) =>
+    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`);
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = upstream.getReader();
-      readerRef = reader;
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let emitted = false;
-
+      const reader = textStream.getReader();
+      let received = false;
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            const line = buffer.slice(0, newlineIndex).replace(/\r$/, "");
-            buffer = buffer.slice(newlineIndex + 1);
-            if (!line.startsWith("data:")) continue;
-
-            const payload = line.slice(5).trim();
-            if (!payload || payload === "[DONE]") continue;
-
-            try {
-              const event = JSON.parse(payload);
-              if (event.type === "content_block_delta" && event.delta?.text) {
-                emitted = true;
-                controller.enqueue(encoder.encode(sseEvent(event.delta.text)));
-              }
-            } catch {
-              // Événement non JSON : on l'ignore.
-            }
+          const text = decoder.decode(value, { stream: true });
+          if (text) {
+            received = true;
+            controller.enqueue(event(text));
           }
         }
-        if (!emitted) {
-          controller.enqueue(encoder.encode(sseEvent("⚠️ Réponse vide reçue du service IA. Veuillez réessayer.")));
+        if (!received) {
+          controller.enqueue(event("⚠️ Réponse vide reçue du service IA. Veuillez réessayer."));
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      } catch (e) {
-        console.warn("Chatbot : flux Claude interrompu.", e);
-        controller.enqueue(encoder.encode(sseEvent("\n\n⚠️ La connexion a été interrompue.")));
-      } finally {
         controller.close();
+      } catch (e) {
+        console.warn("Chatbot : flux interrompu.", e);
+        try {
+          controller.enqueue(event("\n\n⚠️ La connexion a été interrompue."));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch {
+          // Flux déjà fermé.
+        }
       }
     },
     cancel(reason) {
-      readerRef?.cancel(reason).catch(() => {});
+      textStream.cancel(reason).catch(() => {});
     },
   });
 }
@@ -134,10 +66,10 @@ serve(async (req) => {
       ...messages.filter((m: { role: string; content: string }) => m.role !== "system"),
     ];
 
-    // 1. Priorité absolue : Claude (Anthropic)
-    const claudeStream = await streamClaude(gatewayMessages);
+    // 1. Priorité absolue : Claude (Anthropic), en streaming
+    const claudeStream = await streamClaude(gatewayMessages as ChatMessage[], {}, "Chatbot");
     if (claudeStream) {
-      return new Response(claudeStream, {
+      return new Response(toOpenAISse(claudeStream), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }

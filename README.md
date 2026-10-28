@@ -73,9 +73,9 @@ To connect a domain, navigate to Project > Settings > Domains and click Connect 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
 ## Moteur IA : Claude (Anthropic) en priorité
 
-Toutes les fonctions Edge qui produisent du texte (`catholic-orchestrator`, `chatbot`,
-`liturgy-meditation`) utilisent **Claude en priorité absolue**, puis basculent
-automatiquement sur un fournisseur de secours si Claude est indisponible :
+Les Edge Functions qui produisent du texte (`catholic-orchestrator`, `chatbot`,
+`liturgy-meditation`) partagent un client unique : `supabase/functions/_shared/claude.ts`.
+**Claude est le moteur principal**, avec repli automatique si Anthropic est indisponible :
 
 | Ordre | Fournisseur | Fonctions concernées | Secret requis |
 | --- | --- | --- | --- |
@@ -83,9 +83,39 @@ automatiquement sur un fournisseur de secours si Claude est indisponible :
 | 2 (secours) | DeepSeek | `catholic-orchestrator` | `DEEPSEEK_API_KEY` (ou `deeseek_api_key`) |
 | 3 (dernier recours) | Lovable AI Gateway (Gemini) | toutes | `LOVABLE_API_KEY` |
 
-Le repli est silencieux : si Claude répond, aucun autre fournisseur n'est appelé.
-En cas d'erreur transitoire (429, 5xx, timeout), l'appel Claude est retenté une fois
-avant de passer au secours.
+Si Claude répond, aucun autre fournisseur n'est appelé. En cas d'erreur transitoire
+(408, 429, 5xx), l'appel Claude est retenté une fois avant de passer au secours.
+Les erreurs définitives (401 clé invalide, 404 modèle inexistant, 400 requête
+invalide) ne sont pas retentées : le repli s'applique immédiatement, l'application
+reste donc disponible.
+
+### Mise en forme des messages (important)
+
+L'API Anthropic est stricte : elle rejette en 400 les conversations qui ne commencent
+pas par un message `user` et les rôles qui ne s'alternent pas. `normalizeForClaude()`
+applique donc systématiquement : consignes système concaténées en un seul `system`,
+contenus vides supprimés, messages consécutifs de même rôle fusionnés, premier
+message forcé en `user`, historique borné à 40 messages (puis re-nettoyé).
+
+### Vérifier que Claude répond vraiment
+
+La réponse de `catholic-orchestrator` contient un bloc `meta` :
+
+```json
+"meta": {
+  "providers": ["claude"],
+  "primaryProvider": "claude",
+  "claudeActive": true,
+  "claudeModel": "claude-sonnet-4-5-20250929"
+}
+```
+
+- `claudeActive: true` → la réponse a bien été générée par Claude.
+- `providers: ["gemini"]` → Claude a échoué et le secours a pris le relais :
+  consulter les logs de la fonction (`supabase functions logs catholic-orchestrator`),
+  la cause exacte y est écrite (`Claude a refusé l'appel`, `ANTHROPIC_API_KEY … n'est pas configurée`).
+
+Les logs de la fonction affichent aussi `Consultation servie par : claude`.
 
 ### Secrets à configurer
 
@@ -98,6 +128,9 @@ supabase secrets set CLAUDE_ROUTER_MODEL=claude-haiku-4-5-20251001
 ```
 
 ### Déploiement des fonctions
+
+`_shared/claude.ts` étant importé en chemin relatif, il est empaqueté automatiquement
+avec chaque fonction — aucune commande supplémentaire n'est nécessaire.
 
 ```sh
 supabase functions deploy catholic-orchestrator --no-verify-jwt

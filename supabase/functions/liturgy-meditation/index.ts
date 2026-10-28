@@ -1,71 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callClaude, type ChatMessage } from "../_shared/claude.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// --- Claude (Anthropic) : moteur principal -----------------------------------
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
-
-function getAnthropicKey(): string | null {
-  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
-}
-
-/** 1. Priorité absolue : Claude (Anthropic). Retourne null s'il est indisponible. */
-async function callClaude(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  const key = getAnthropicKey();
-  if (!key) {
-    console.warn("Méditation : ANTHROPIC_API_KEY absente, repli sur le gateway.");
-    return null;
-  }
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: CLAUDE_MODEL,
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        }),
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        console.warn("Méditation : Claude indisponible.", response.status, detail.slice(0, 300));
-        const retryable = [408, 429, 500, 502, 503, 529].includes(response.status);
-        if (attempt === 0 && retryable) {
-          await new Promise((r) => setTimeout(r, 800));
-          continue;
-        }
-        return null;
-      }
-
-      const data = await response.json();
-      const text = (data.content || [])
-        .map((c: { type?: string; text?: string }) => (c.type === "text" ? c.text || "" : ""))
-        .join("")
-        .trim();
-      return text || null;
-    } catch (e) {
-      console.warn("Méditation : appel Claude impossible.", e);
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
-        continue;
-      }
-      return null;
-    }
-  }
-
-  return null;
-}
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -141,7 +80,11 @@ ${lecturesText}
 Rédige une méditation homilétique complète pour aider le fidèle à approfondir ces textes.`;
 
     // 1. Priorité absolue : Claude (Anthropic)
-    const claudeText = await callClaude(systemPrompt, userPrompt);
+    const claudeMessages: ChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ];
+    const claudeText = await callClaude(claudeMessages, {}, "Méditation");
     if (claudeText) {
       return new Response(
         JSON.stringify({

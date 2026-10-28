@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  callClaude,
+  CLAUDE_MODEL,
+  CLAUDE_ROUTER_MODEL,
+  type ChatMessage,
+} from "../_shared/claude.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,87 +174,6 @@ async function callDeepSeek(messages: Message[]): Promise<string | null> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Claude (Anthropic) — moteur principal de l'application
-// ---------------------------------------------------------------------------
-
-// Modèles Claude. Surchargables via les secrets Supabase sans redéploiement de code.
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
-// Modèle optionnel, plus rapide/moins coûteux, pour l'analyse de routage (JSON).
-const CLAUDE_ROUTER_MODEL = Deno.env.get("CLAUDE_ROUTER_MODEL") || CLAUDE_MODEL;
-
-const CLAUDE_MAX_TOKENS = 8192;
-
-function getAnthropicKey(): string | null {
-  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
-}
-
-function isRetryableStatus(status: number): boolean {
-  return status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 529;
-}
-
-async function callClaude(
-  messages: Message[],
-  options: { model?: string; maxTokens?: number; temperature?: number } = {},
-): Promise<string | null> {
-  const key = getAnthropicKey();
-  if (!key) {
-    console.warn("Claude désactivé : ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée.");
-    return null;
-  }
-
-  const model = options.model || CLAUDE_MODEL;
-  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-  const rest = messages.filter((m) => m.role !== "system");
-
-  const payload = {
-    model,
-    max_tokens: options.maxTokens ?? CLAUDE_MAX_TOKENS,
-    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
-    ...(system ? { system } : {}),
-    messages: rest.map((m) => ({ role: m.role, content: m.content })),
-  };
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        console.warn("Claude unavailable:", response.status, detail.slice(0, 300));
-        if (attempt === 0 && isRetryableStatus(response.status)) {
-          await new Promise((r) => setTimeout(r, 800));
-          continue;
-        }
-        return null;
-      }
-
-      const data = await response.json();
-      const text = (data.content || [])
-        .map((c: { type?: string; text?: string }) => (c.type === "text" ? c.text || "" : ""))
-        .join("");
-      return text.trim() || null;
-    } catch (e) {
-      console.warn("Claude call failed:", e);
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
-        continue;
-      }
-      return null;
-    }
-  }
-
-  return null;
-}
-
 /**
  * Appel IA unifié.
  * 1. Priorité absolue : Claude (Anthropic)
@@ -259,14 +184,25 @@ async function callAI(
   messages: Message[],
   fallbackModel = "google/gemini-2.5-pro",
   claudeModel?: string,
+  trace?: AIProvider[],
 ): Promise<string> {
   // 1. Priorité absolue : Claude (Anthropic)
-  const claude = await callClaude(messages, claudeModel ? { model: claudeModel } : {});
-  if (claude) return claude;
+  const claude = await callClaude(
+    messages as ChatMessage[],
+    claudeModel ? { model: claudeModel } : {},
+    "Orchestrateur",
+  );
+  if (claude) {
+    trace?.push("claude");
+    return claude;
+  }
 
   // 2. Secours : DeepSeek
   const deepseek = await callDeepSeek(messages);
-  if (deepseek) return deepseek;
+  if (deepseek) {
+    trace?.push("deepseek");
+    return deepseek;
+  }
 
   // 3. Dernier recours : Lovable AI Gateway
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -299,6 +235,7 @@ async function callAI(
     throw new HttpError(response.status, `Erreur IA: ${response.status}`);
   }
 
+  trace?.push("gemini");
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "";
 }
@@ -382,6 +319,9 @@ serve(async (req) => {
       }
     }
 
+    // Traçabilité : quel fournisseur a réellement répondu (utile pour vérifier que Claude est actif)
+    const providersUsed: AIProvider[] = [];
+
     // Phase 1: Analyse par l'Orchestrateur
     const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
 
@@ -407,7 +347,7 @@ Question: ${question}`;
     const analyseResponse = await callAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
-    ], "google/gemini-3-flash-preview", CLAUDE_ROUTER_MODEL);
+    ], "google/gemini-3-flash-preview", CLAUDE_ROUTER_MODEL, providersUsed);
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
@@ -451,7 +391,7 @@ Question: ${question}`;
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
-      ], "google/gemini-3-flash-preview");
+      ], "google/gemini-3-flash-preview", undefined, providersUsed);
 
       return {
         expert: expertKey,
@@ -486,7 +426,7 @@ Format ta réponse en markdown avec une belle mise en page.`;
     const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ]);
+    ], "google/gemini-2.5-pro", undefined, providersUsed);
 
     // Comptabilisation serveur de la consultation
     if (!isAdmin) {
@@ -505,8 +445,17 @@ Format ta réponse en markdown avec une belle mise en page.`;
       }
     }
 
+    const providers = [...new Set(providersUsed)];
+    console.log(`Consultation servie par : ${providers.join(", ") || "aucun fournisseur"}`);
+
     return jsonResponse({
       success: true,
+      meta: {
+        providers,
+        primaryProvider: providers[0] || null,
+        claudeActive: providers.includes("claude"),
+        claudeModel: CLAUDE_MODEL,
+      },
       analysis: {
         selectedExperts: selectedExperts.map(key => ({
           key,
