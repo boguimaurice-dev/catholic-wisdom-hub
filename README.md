@@ -84,7 +84,7 @@ visible et les fichiers ajoutés sont écrasés au déploiement).
 
 | Ordre | Fournisseur | Fonctions concernées | Secret requis |
 | --- | --- | --- | --- |
-| 1 (principal) | **Claude — Anthropic** (`claude-sonnet-4-5-20250929`) | toutes | `ANTHROPIC_API_KEY` (ou `CLAUDE_API_KEY`, `claude_api`) |
+| 1 (principal) | **Claude — Anthropic** (`claude-3-5-sonnet-20241022`) | toutes | `ANTHROPIC_API_KEY` (ou `CLAUDE_API_KEY`, `claude_api`) |
 | 2 (secours) | DeepSeek | toutes les fonctions IA | `DEEPSEEK_API_KEY` (ou `deepseek_api_key`, `DEESEEK_API_KEY`, `deeseek_api_key`) |
 | 3 (dernier recours) | Lovable AI Gateway (Gemini) | toutes | `LOVABLE_API_KEY` |
 
@@ -111,7 +111,7 @@ La réponse de `catholic-orchestrator` contient un bloc `meta` :
   "providers": ["claude"],
   "primaryProvider": "claude",
   "claudeActive": true,
-  "claudeModel": "claude-sonnet-4-5-20250929"
+  "claudeModel": "claude-3-5-sonnet-20241022"
 }
 ```
 
@@ -126,12 +126,9 @@ Les logs de la fonction affichent aussi `Consultation servie par : claude`.
 
 ```sh
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-# alias compatible
 supabase secrets set CLAUDE_API_KEY=sk-ant-...
-# optionnel : changer de modèle sans toucher au code
-supabase secrets set CLAUDE_MODEL=claude-sonnet-4-5-20250929
-# optionnel : modèle (plus rapide/économique) utilisé pour le routage des experts
-supabase secrets set CLAUDE_ROUTER_MODEL=claude-haiku-4-5-20251001
+supabase secrets set CLAUDE_MODEL=claude-3-5-sonnet-20241022
+supabase secrets set CLAUDE_ROUTER_MODEL=claude-3-5-haiku-20241022
 supabase secrets set DEEPSEEK_API_KEY=sk-...
 ```
 
@@ -145,8 +142,3 @@ supabase functions deploy catholic-orchestrator --no-verify-jwt
 supabase functions deploy chatbot
 supabase functions deploy liturgy-meditation
 ```
-
-> `claude-sonnet-4-5-20250929` est annoncé en fin de vie sur l'API Anthropic
-> (retrait prévu le 30 novembre 2026). Le jour venu, il suffit de modifier le secret
-> `CLAUDE_MODEL` (par exemple `CLAUDE_MODEL=claude-sonnet-5-5`) : aucun changement de
-> code ni redéploiement n'est nécessaire.

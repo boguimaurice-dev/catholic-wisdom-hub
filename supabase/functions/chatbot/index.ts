@@ -17,8 +17,8 @@ type ClaudeOptions = {
   stream?: boolean;
 };
 
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
-const CLAUDE_ROUTER_MODEL = Deno.env.get("CLAUDE_ROUTER_MODEL") || CLAUDE_MODEL;
+const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-3-5-sonnet-20241022";
+const CLAUDE_ROUTER_MODEL = Deno.env.get("CLAUDE_ROUTER_MODEL") || "claude-3-5-haiku-20241022";
 const CLAUDE_MAX_TOKENS = 8192;
 const CLAUDE_MAX_HISTORY = 40;
 
