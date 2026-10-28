@@ -1,5 +1,165 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// ===========================================================================
+// Claude (Anthropic) — moteur IA principal
+// ---------------------------------------------------------------------------
+// Ce bloc est volontairement intégré au fichier, sans import local : l'éditeur
+// web de Supabase ne gère qu'un seul fichier par fonction, ce qui rend tout
+// import du type "../_shared/..." impossible à déployer depuis le tableau de bord.
+// Il est identique dans catholic-orchestrator, chatbot et liturgy-meditation :
+// toute correction doit être reportée dans les trois fichiers.
+// ===========================================================================
+type ClaudeMessage = { role: "user" | "assistant" | "system"; content: string };
+
+type ClaudeOptions = {
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+  stream?: boolean;
+};
+
+const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
+const CLAUDE_ROUTER_MODEL = Deno.env.get("CLAUDE_ROUTER_MODEL") || CLAUDE_MODEL;
+const CLAUDE_MAX_TOKENS = 8192;
+const CLAUDE_MAX_HISTORY = 40;
+
+function claudeApiKey(): string | null {
+  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
+}
+
+/**
+ * Met le dialogue en forme pour l'API Anthropic, qui rejette (400) :
+ * - une conversation dont le premier message n'est pas "user" ;
+ * - des messages consécutifs de même rôle ;
+ * - un contenu vide.
+ */
+function normalizeClaudeMessages(
+  messages: ClaudeMessage[],
+  maxHistory = CLAUDE_MAX_HISTORY,
+): { system: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  const system = messages
+    .filter((m) => m.role === "system")
+    .map((m) => (m.content || "").trim())
+    .filter(Boolean)
+    .join("\n\n");
+
+  const merged: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of messages) {
+    if (m.role !== "user" && m.role !== "assistant") continue;
+    const content = (m.content || "").trim();
+    if (!content) continue;
+    const last = merged[merged.length - 1];
+    if (last && last.role === m.role) {
+      last.content += `\n\n${content}`;
+    } else {
+      merged.push({ role: m.role, content });
+    }
+  }
+
+  while (merged.length > 0 && merged[0].role !== "user") merged.shift();
+
+  // La troncature peut faire réapparaître un "assistant" en tête : on re-nettoie.
+  const bounded = merged.slice(-maxHistory);
+  while (bounded.length > 0 && bounded[0].role !== "user") bounded.shift();
+
+  return { system, messages: bounded };
+}
+
+function claudeRetryable(status: number): boolean {
+  return status === 408 || status === 409 || status === 429 || status === 500 ||
+    status === 502 || status === 503 || status === 529;
+}
+
+/** Envoie la requête à Anthropic. Une seule nouvelle tentative, sur erreur transitoire. */
+async function claudeRequest(
+  messages: ClaudeMessage[],
+  options: ClaudeOptions,
+  label: string,
+): Promise<Response | null> {
+  const key = claudeApiKey();
+  if (!key) {
+    console.warn(`${label} : Claude désactivé, ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée.`);
+    return null;
+  }
+
+  const { system, messages: dialogue } = normalizeClaudeMessages(messages);
+  if (dialogue.length === 0) {
+    console.warn(`${label} : aucun message utilisateur exploitable, appel Claude ignoré.`);
+    return null;
+  }
+
+  const body = JSON.stringify({
+    model: options.model || CLAUDE_MODEL,
+    max_tokens: options.maxTokens ?? CLAUDE_MAX_TOKENS,
+    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+    ...(options.stream ? { stream: true } : {}),
+    ...(system ? { system } : {}),
+    messages: dialogue,
+  });
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        body,
+      });
+
+      if (response.ok) return response;
+
+      const detail = await response.text().catch(() => "");
+      console.warn(`${label} : Claude a refusé l'appel.`, response.status, detail.slice(0, 300));
+
+      if (attempt === 0 && claudeRetryable(response.status)) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+      return null;
+    } catch (e) {
+      console.warn(`${label} : appel Claude impossible.`, e);
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Appel Claude classique. Retourne null si Claude est indisponible, ce qui
+ * laisse l'appelant basculer sur un fournisseur de secours.
+ */
+async function callClaude(
+  messages: ClaudeMessage[],
+  options: ClaudeOptions = {},
+  label = "Claude",
+): Promise<string | null> {
+  const response = await claudeRequest(messages, options, label);
+  if (!response) return null;
+
+  try {
+    const data = await response.json();
+    const text = (data.content || [])
+      .map((c: { type?: string; text?: string }) => (c.type === "text" ? c.text || "" : ""))
+      .join("")
+      .trim();
+    if (!text) {
+      console.warn(`${label} : réponse Claude vide.`);
+      return null;
+    }
+    return text;
+  } catch (e) {
+    console.warn(`${label} : réponse Claude illisible.`, e);
+    return null;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,51 +328,37 @@ async function callDeepSeek(messages: Message[]): Promise<string | null> {
   }
 }
 
-async function callClaude(messages: Message[]): Promise<string | null> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
-  if (!key) return null;
-
-  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-  const rest = messages.filter((m) => m.role !== "system");
-
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        system: system || undefined,
-        messages: rest.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn("Claude unavailable:", response.status, await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
-    return text || null;
-  } catch (e) {
-    console.warn("Claude call failed:", e);
-    return null;
+/**
+ * Appel IA unifié.
+ * 1. Priorité absolue : Claude (Anthropic)
+ * 2. Secours : DeepSeek
+ * 3. Dernier recours : Lovable AI Gateway (Gemini)
+ */
+async function callAI(
+  messages: Message[],
+  fallbackModel = "google/gemini-2.5-pro",
+  claudeModel?: string,
+  trace?: AIProvider[],
+): Promise<string> {
+  // 1. Priorité absolue : Claude (Anthropic)
+  const claude = await callClaude(
+    messages as ClaudeMessage[],
+    claudeModel ? { model: claudeModel } : {},
+    "Orchestrateur",
+  );
+  if (claude) {
+    trace?.push("claude");
+    return claude;
   }
-}
 
-async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
-  // Priorité : DeepSeek -> Claude -> Lovable AI Gateway
+  // 2. Secours : DeepSeek
   const deepseek = await callDeepSeek(messages);
-  if (deepseek) return deepseek;
+  if (deepseek) {
+    trace?.push("deepseek");
+    return deepseek;
+  }
 
-  const claude = await callClaude(messages);
-  if (claude) return claude;
-
+  // 3. Dernier recours : Lovable AI Gateway
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "Aucun fournisseur IA disponible");
 
@@ -223,7 +369,7 @@ async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro
       "Authorization": `Bearer ${LOVABLE_API_KEY}`,
     },
     body: JSON.stringify({
-      model,
+      model: fallbackModel,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 4096,
     }),
@@ -243,6 +389,7 @@ async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro
     throw new HttpError(response.status, `Erreur IA: ${response.status}`);
   }
 
+  trace?.push("gemini");
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "";
 }
@@ -326,6 +473,9 @@ serve(async (req) => {
       }
     }
 
+    // Traçabilité : quel fournisseur a réellement répondu (utile pour vérifier que Claude est actif)
+    const providersUsed: AIProvider[] = [];
+
     // Phase 1: Analyse par l'Orchestrateur
     const analysePrompt = `Tu es l'orchestreur assistant en chef, un érudit coordonnant une équipe d'experts catholiques.
 
@@ -348,10 +498,10 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme:
 
 Question: ${question}`;
 
-    const analyseResponse = await callLovableAI([
+    const analyseResponse = await callAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
-    ], "google/gemini-3-flash-preview");
+    ], "google/gemini-3-flash-preview", CLAUDE_ROUTER_MODEL, providersUsed);
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
@@ -366,6 +516,13 @@ Question: ${question}`;
     } catch {
       selectedExperts = ["theologien"];
       analyseRaison = "Consultation théologique par défaut";
+    }
+
+    // Filet de sécurité : si le routeur n'a pas renvoyé de JSON exploitable,
+    // on consulte au moins le théologien plutôt que de répondre sans expert.
+    if (selectedExperts.length === 0) {
+      selectedExperts = ["theologien"];
+      analyseRaison = analyseRaison || "Consultation théologique par défaut";
     }
 
     // Restriction des experts avancés pour le plan gratuit
@@ -384,11 +541,11 @@ Question: ${question}`;
       const expert = EXPERTS[expertKey as keyof typeof EXPERTS];
       if (!expert) return null;
 
-      const expertResponse = await callLovableAI([
+      const expertResponse = await callAI([
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
-      ], "google/gemini-3-flash-preview");
+      ], "google/gemini-3-flash-preview", undefined, providersUsed);
 
       return {
         expert: expertKey,
@@ -420,10 +577,10 @@ Crée une réponse unifiée et bien structurée qui:
 
 Format ta réponse en markdown avec une belle mise en page.`;
 
-    const syntheseResponse = await callLovableAI([
+    const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
-    ]);
+    ], "google/gemini-2.5-pro", undefined, providersUsed);
 
     // Comptabilisation serveur de la consultation
     if (!isAdmin) {
@@ -442,8 +599,17 @@ Format ta réponse en markdown avec une belle mise en page.`;
       }
     }
 
+    const providers = [...new Set(providersUsed)];
+    console.log(`Consultation servie par : ${providers.join(", ") || "aucun fournisseur"}`);
+
     return jsonResponse({
       success: true,
+      meta: {
+        providers,
+        primaryProvider: providers[0] || null,
+        claudeActive: providers.includes("claude"),
+        claudeModel: CLAUDE_MODEL,
+      },
       analysis: {
         selectedExperts: selectedExperts.map(key => ({
           key,
