@@ -23,7 +23,11 @@ const CLAUDE_MAX_TOKENS = 8192;
 const CLAUDE_MAX_HISTORY = 40;
 
 function claudeApiKey(): string | null {
-  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
+  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("CLAUDE_API_KEY") || Deno.env.get("claude_api") || null;
+}
+
+function deepseekApiKey(): string | null {
+  return Deno.env.get("DEEPSEEK_API_KEY") || Deno.env.get("deepseek_api_key") || Deno.env.get("DEESEEK_API_KEY") || Deno.env.get("deeseek_api_key") || null;
 }
 
 /**
@@ -77,7 +81,7 @@ async function claudeRequest(
 ): Promise<Response | null> {
   const key = claudeApiKey();
   if (!key) {
-    console.warn(`${label} : Claude désactivé, ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée.`);
+    console.warn(`${label} : Claude désactivé, ANTHROPIC_API_KEY (ou CLAUDE_API_KEY / claude_api) n'est pas configurée.`);
     return null;
   }
 
@@ -225,16 +229,44 @@ async function streamClaude(
   });
 }
 
+async function callDeepSeekText(messages: ClaudeMessage[], label: string): Promise<string | null> {
+  const key = deepseekApiKey();
+  if (!key) return null;
+
+  try {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`${label} : DeepSeek indisponible.`, response.status, await response.text().catch(() => ""));
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || "";
+    return text.trim() || null;
+  } catch (e) {
+    console.warn(`${label} : DeepSeek a échoué.`, e);
+    return null;
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client",
 };
 
-const SYSTEM_PROMPT = `Tu es un assistant catholique bienveillant et érudit. Tu aides les fidèles avec leurs questions sur la foi, la prière, les sacrements, la Bible, la vie chrétienne et la tradition de l'Église catholique.
-
-Tu réponds toujours en français, avec charité et respect. Tu cites les Écritures et le Catéchisme quand c'est pertinent. Tu ne te proclames jamais avec des titres ecclésiaux (évêque, prêtre, etc.) — tu es simplement un assistant.
-
-Sois concis mais complet. Utilise le markdown pour structurer tes réponses.`;
+const SYSTEM_PROMPT = `Tu es un assistant catholique bienveillant et érudit. Tu aides les fidèles avec leurs questions sur la foi, la prière, les sacrements, la Bible, la vie chrétienne et la spiritualité. Tu réponds toujours en français, avec charité et respect. Tu cites les Écritures et le Catéchisme quand c'est pertinent. Tu ne te proclames jamais avec des titres ecclésiaux (évêque, prêtre, cardinal...) et tu gardes une posture à la fois pastorale et doctrinale. Sois concis mais complet. Utilise le markdown pour structurer tes réponses.`;
 
 /** Convertit un flux de texte brut en SSE au format attendu par le front (style OpenAI). */
 function toOpenAISse(textStream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
@@ -294,13 +326,26 @@ serve(async (req) => {
     const claudeStream = await streamClaude(gatewayMessages as ClaudeMessage[], {}, "Chatbot");
     if (claudeStream) {
       return new Response(toOpenAISse(claudeStream), {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Provider-Used": "claude" },
       });
     }
 
-    // 2. Secours : Lovable AI Gateway
+    // 2. Secours : DeepSeek
+    const deepseekText = await callDeepSeekText(gatewayMessages as ClaudeMessage[], "Chatbot");
+    if (deepseekText) {
+      return new Response(toOpenAISse(new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(deepseekText));
+          controller.close();
+        },
+      })), {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Provider-Used": "deepseek" },
+      });
+    }
+
+    // 3. Dernier recours : Lovable AI Gateway
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("Aucun fournisseur IA disponible (ANTHROPIC_API_KEY ou LOVABLE_API_KEY requis)");
+    if (!LOVABLE_API_KEY) throw new Error("Aucun fournisseur IA disponible (ANTHROPIC_API_KEY / CLAUDE_API_KEY ou LOVABLE_API_KEY requis)");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -321,21 +366,21 @@ serve(async (req) => {
       console.error("Lovable AI error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requêtes atteinte, réessayez plus tard." }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "gemini" },
         });
       }
       return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "gemini" },
       });
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Provider-Used": "gemini" },
     });
   } catch (e) {
     console.error("chatbot error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "error" },
     });
   }
 });

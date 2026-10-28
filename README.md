@@ -84,8 +84,8 @@ visible et les fichiers ajoutés sont écrasés au déploiement).
 
 | Ordre | Fournisseur | Fonctions concernées | Secret requis |
 | --- | --- | --- | --- |
-| 1 (principal) | **Claude — Anthropic** (`claude-sonnet-4-5-20250929`) | toutes | `ANTHROPIC_API_KEY` (ou `claude_api`) |
-| 2 (secours) | DeepSeek | `catholic-orchestrator` | `DEEPSEEK_API_KEY` (ou `deeseek_api_key`) |
+| 1 (principal) | **Claude — Anthropic** (`claude-sonnet-4-5-20250929`) | toutes | `ANTHROPIC_API_KEY` (ou `CLAUDE_API_KEY`, `claude_api`) |
+| 2 (secours) | DeepSeek | toutes les fonctions IA | `DEEPSEEK_API_KEY` (ou `deepseek_api_key`, `DEESEEK_API_KEY`, `deeseek_api_key`) |
 | 3 (dernier recours) | Lovable AI Gateway (Gemini) | toutes | `LOVABLE_API_KEY` |
 
 Si Claude répond, aucun autre fournisseur n'est appelé. En cas d'erreur transitoire
@@ -126,10 +126,13 @@ Les logs de la fonction affichent aussi `Consultation servie par : claude`.
 
 ```sh
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+# alias compatible
+supabase secrets set CLAUDE_API_KEY=sk-ant-...
 # optionnel : changer de modèle sans toucher au code
 supabase secrets set CLAUDE_MODEL=claude-sonnet-4-5-20250929
 # optionnel : modèle (plus rapide/économique) utilisé pour le routage des experts
 supabase secrets set CLAUDE_ROUTER_MODEL=claude-haiku-4-5-20251001
+supabase secrets set DEEPSEEK_API_KEY=sk-...
 ```
 
 ### Déploiement des fonctions

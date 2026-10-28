@@ -23,7 +23,11 @@ const CLAUDE_MAX_TOKENS = 8192;
 const CLAUDE_MAX_HISTORY = 40;
 
 function claudeApiKey(): string | null {
-  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
+  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("CLAUDE_API_KEY") || Deno.env.get("claude_api") || null;
+}
+
+function deepseekApiKey(): string | null {
+  return Deno.env.get("DEEPSEEK_API_KEY") || Deno.env.get("deepseek_api_key") || Deno.env.get("DEESEEK_API_KEY") || Deno.env.get("deeseek_api_key") || null;
 }
 
 /**
@@ -77,7 +81,7 @@ async function claudeRequest(
 ): Promise<Response | null> {
   const key = claudeApiKey();
   if (!key) {
-    console.warn(`${label} : Claude désactivé, ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée.`);
+    console.warn(`${label} : Claude désactivé, ANTHROPIC_API_KEY (ou CLAUDE_API_KEY / claude_api) n'est pas configurée.`);
     return null;
   }
 
@@ -160,6 +164,38 @@ async function callClaude(
   }
 }
 
+async function callDeepSeekText(messages: ClaudeMessage[], label: string): Promise<string | null> {
+  const key = deepseekApiKey();
+  if (!key) return null;
+
+  try {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`${label} : DeepSeek indisponible.`, response.status, await response.text().catch(() => ""));
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || "";
+    return text.trim() || null;
+  } catch (e) {
+    console.warn(`${label} : DeepSeek a échoué.`, e);
+    return null;
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -186,7 +222,6 @@ serve(async (req) => {
     const { date, language = "fr" } = await req.json().catch(() => ({}));
     const today = date || new Date().toISOString().slice(0, 10);
 
-    // Fetch AELF readings
     const aelfRes = await fetch(`https://api.aelf.org/v1/messes/${today}/france`);
     if (!aelfRes.ok) throw new Error("Impossible de récupérer les textes liturgiques");
     const aelf = await aelfRes.json();
@@ -217,32 +252,15 @@ serve(async (req) => {
         ? "Responda em português."
         : "Réponds en français.";
 
-    const systemPrompt = `Tu es l'orchestreur assistant en chef, au service de la prière et de la méditation catholique. Tu rédiges une méditation homilétique profonde, fidèle à la Tradition de l'Église, à partir des lectures du jour. ${langInstruction}
+    const systemPrompt = `Tu es l'orchestreur assistant en chef, au service de la prière et de la méditation catholique. Tu rédiges une méditation homilétique profonde, fidèle à la Tradition de l'Église catholique. ${langInstruction} Tu dois aider le fidèle à entrer dans le mystère du jour liturgique.\n\nStructure ta méditation ainsi :\n1. Une introduction qui situe le jour liturgique\n2. Une exégèse brève de chaque lecture (sens littéral et spirituel)\n3. Le fil théologique qui unit les lectures\n4. Une application spirituelle pour la vie quotidienne\n5. Une prière finale courte\n\nStyle : pastoral, chaleureux, enraciné dans les Pères de l'Église et la Tradition. Cite les Pères ou les saints quand c'est pertinent. N'utilise PAS d'astérisques (*) ni de dièses (#) pour la mise en forme.`;
 
-Structure ta méditation ainsi :
-1. Une introduction qui situe le jour liturgique
-2. Une exégèse brève de chaque lecture (sens littéral et spirituel)
-3. Le fil théologique qui unit les lectures
-4. Une application spirituelle pour la vie quotidienne
-5. Une prière finale courte
+    const userPrompt = `Jour liturgique : ${info.ligne1 || ""}\n${info.fete ? `Fête : ${info.fete}` : ""}\nCouleur liturgique : ${info.couleur || ""}\n\nVoici les lectures du jour :\n\n${lecturesText}\n\nRédige une méditation homilétique complète pour aider le fidèle à approfondir ces textes.`;
 
-Style : pastoral, chaleureux, enraciné dans les Pères de l'Église et la Tradition. Cite les Pères ou les saints quand c'est pertinent. N'utilise PAS d'astérisques (*) ni de dièses (#) pour la mise en forme — utilise du texte fluide avec des titres en majuscules suivis de deux points.`;
-
-    const userPrompt = `Jour liturgique : ${info.ligne1 || ""}
-${info.fete ? `Fête : ${info.fete}` : ""}
-Couleur liturgique : ${info.couleur || ""}
-
-Voici les lectures du jour :
-
-${lecturesText}
-
-Rédige une méditation homilétique complète pour aider le fidèle à approfondir ces textes.`;
-
-    // 1. Priorité absolue : Claude (Anthropic)
     const claudeMessages: ClaudeMessage[] = [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ];
+
     const claudeText = await callClaude(claudeMessages, {}, "Méditation");
     if (claudeText) {
       return new Response(
@@ -252,20 +270,45 @@ Rédige une méditation homilétique complète pour aider le fidèle à approfon
           informations: info,
           lectures,
           meditation: claudeText,
+          meta: {
+            providers: ["claude"],
+            primaryProvider: "claude",
+            claudeActive: true,
+            claudeModel: CLAUDE_MODEL,
+          },
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "claude" } }
       );
     }
 
-    // 2. Secours : Lovable AI Gateway
+    const deepseekText = await callDeepSeekText(claudeMessages, "Méditation");
+    if (deepseekText) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          date: today,
+          informations: info,
+          lectures,
+          meditation: deepseekText,
+          meta: {
+            providers: ["deepseek"],
+            primaryProvider: "deepseek",
+            claudeActive: false,
+            claudeModel: CLAUDE_MODEL,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "deepseek" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Aucun fournisseur IA disponible (ANTHROPIC_API_KEY ou LOVABLE_API_KEY requis)",
+          error: "Aucun fournisseur IA disponible (ANTHROPIC_API_KEY / CLAUDE_API_KEY ou LOVABLE_API_KEY requis)",
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "error" } }
       );
     }
 
@@ -295,7 +338,7 @@ Rédige une méditation homilétique complète pour aider le fidèle à approfon
             ? "Crédits épuisés. Veuillez recharger votre compte."
             : `Erreur IA: ${errText.slice(0, 200)}`,
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "gemini" } }
       );
     }
 
@@ -309,13 +352,19 @@ Rédige une méditation homilétique complète pour aider le fidèle à approfon
         informations: info,
         lectures,
         meditation,
+        meta: {
+          providers: ["gemini"],
+          primaryProvider: "gemini",
+          claudeActive: false,
+          claudeModel: CLAUDE_MODEL,
+        },
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "gemini" } }
     );
   } catch (e) {
     return new Response(
       JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Erreur inconnue" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Provider-Used": "error" } }
     );
   }
 });
