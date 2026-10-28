@@ -1,98 +1,114 @@
 # Activer Claude (Anthropic) — procédure manuelle
 
-> Cette procédure ne demande **aucun mode Build** ni abonnement Lovable.
-> Tout se fait depuis GitHub, puis depuis Supabase (une seule fois).
+> Aucun mode Build ni abonnement Lovable n'est nécessaire.
+> Comptez 10 minutes, tout se fait par clics depuis GitHub puis Supabase.
 
 ---
 
 ## À savoir avant de commencer
 
-Modifier un fichier sur GitHub met à jour **le code source**, pas la fonction
-déployée. Il y a donc deux étapes distinctes :
+Trois choses sont indépendantes :
 
-1. **le code** → sur GitHub (étape 1 ci-dessous) ;
-2. **le déploiement** → dans Supabase (étape 3).
+| # | Quoi | Où |
+| --- | --- | --- |
+| 1 | Le **code source** | GitHub |
+| 2 | La **clé secrète** Anthropic | Supabase (jamais dans le code) |
+| 3 | Les **fonctions déployées** | Supabase |
 
-Si votre projet Lovable se synchronise encore automatiquement avec Supabase,
-l'étape 3 peut se faire seule. Sinon, elle prend 2 minutes.
+Modifier le code sur GitHub ne met pas à jour les fonctions déjà déployées :
+l'étape 3 est obligatoire si la synchronisation automatique de Lovable ne
+fonctionne plus (abonnement expiré). Elle prend 3 minutes.
+
+Les 3 fonctions concernées sont **autonomes** (un seul fichier chacune) : elles
+peuvent donc être collées directement dans l'éditeur web de Supabase, qui ne
+gère qu'un fichier par fonction.
 
 ---
 
-## Étape 1 — Récupérer les modifications du code
+## Étape 1 — Récupérer le code
 
-### Option A — recommandée : fusionner la pull request (1 clic)
+### Recommandé : fusionner la pull request (1 clic)
 
-1. Ouvrir : https://github.com/boguimaurice-dev/catholic-wisdom-hub/pull/16
-2. Cliquer sur **Merge pull request**, puis **Confirm merge**.
+1. Ouvrir https://github.com/boguimaurice-dev/catholic-wisdom-hub/pull/16
+2. **Merge pull request** → **Confirm merge**
 
-Les 5 fichiers sont appliqués d'un coup, sans risque de faute de frappe :
+Fichiers concernés :
 
 | Fichier | Nature |
 | --- | --- |
-| `supabase/functions/_shared/claude.ts` | nouveau (client Claude commun) |
 | `supabase/functions/catholic-orchestrator/index.ts` | modifié |
 | `supabase/functions/chatbot/index.ts` | modifié |
 | `supabase/functions/liturgy-meditation/index.ts` | modifié |
 | `README.md` | documenté |
+| `docs/ACTIVER-CLAUDE.md` | ce guide |
 
 > ⚠️ **Ne pas** appliquer l'ancienne procédure « remplacer 2 lignes ».
-> Elle ne suffit pas : dans ce dépôt, l'ordre des fournisseurs est dans
-> `callAI()` et `callLovableAI()`, et `chatbot` / `liturgy-meditation`
-> n'appelaient jamais Claude. Deux des trois fonctions resteraient sur Gemini.
+> Dans ce dépôt, l'ordre des fournisseurs se trouve dans `callAI()` et
+> `callLovableAI()` (pas à la ligne 235), et `chatbot` /
+> `liturgy-meditation` n'appelaient **jamais** Claude. Deux fonctions sur trois
+> resteraient sur Gemini.
 
-### Option B — copier-coller manuel (si vous ne pouvez pas fusionner)
+### Alternative : copier-coller sur GitHub
 
-1. **Créer le fichier partagé** : dans le dépôt, ouvrir le dossier
-   `supabase/functions/`, cliquer **Add file → Create new file**, nommer
-   `_shared/claude.ts`, puis coller le contenu de
-   https://raw.githubusercontent.com/boguimaurice-dev/catholic-wisdom-hub/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/_shared/claude.ts
-   → **Commit changes**.
-2. **Remplacer les 3 fonctions** : pour chacune, ouvrir le fichier → icône ✏️ →
-   sélectionner tout (Ctrl+A) → coller le contenu du lien correspondant →
-   **Commit changes**.
-   - https://raw.githubusercontent.com/boguimaurice-dev/catholic-wisdom-hub/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/catholic-orchestrator/index.ts
-   - https://raw.githubusercontent.com/boguimaurice-dev/catholic-wisdom-hub/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/chatbot/index.ts
-   - https://raw.githubusercontent.com/boguimaurice-dev/catholic-wisdom-hub/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/liturgy-meditation/index.ts
+Ouvrir chaque lien, cliquer sur **Raw**, tout sélectionner (Ctrl+A), copier, puis
+dans le dépôt : ouvrir le fichier → ✏️ → tout sélectionner → coller →
+**Commit changes**.
 
-   Le dossier `_shared` est le motif officiel Supabase : il est empaqueté
-   automatiquement avec chaque fonction au déploiement.
+- https://github.com/boguimaurice-dev/catholic-wisdom-hub/blob/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/catholic-orchestrator/index.ts
+- https://github.com/boguimaurice-dev/catholic-wisdom-hub/blob/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/chatbot/index.ts
+- https://github.com/boguimaurice-dev/catholic-wisdom-hub/blob/arena/7d08cdbe-catholic-wisdom-hub/supabase/functions/liturgy-meditation/index.ts
 
 ---
 
 ## Étape 2 — Enregistrer la clé Claude
 
-La clé ne doit **jamais** être dans le code : elle se place dans les secrets
-Supabase de la fonction.
-
-**Via le tableau de bord** (le plus simple) :
-
-1. https://supabase.com/dashboard/project/xfbjowupnffoykyhaqoz
-2. **Project Settings → Edge Functions → Secrets** (ou *Functions → Secrets*)
+1. Ouvrir https://supabase.com/dashboard/project/xfbjowupnffoykyhaqoz
+2. Menu **Project Settings** → **Edge Functions** → section **Secrets**
+   (ou **Edge Functions** → onglet **Secrets** selon la version du tableau de bord)
 3. **Add new secret** :
    - Name : `ANTHROPIC_API_KEY`
    - Value : votre clé `sk-ant-...`
-4. Enregistrer.
+4. Valider.
 
-**Via la ligne de commande** (si vous l'utilisez) :
-
-```sh
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-```
+> Si vous voyez déjà un secret `claude_api` (ancien nom), il fonctionne aussi.
+> `ANTHROPIC_API_KEY` reste préféré.
 
 ---
 
-## Étape 3 — Redéployer les 3 fonctions
+## Étape 3 — Déployer les 3 fonctions
 
-Le code modifié doit être publié pour être actif.
+### A. Vérifier d'abord si c'est déjà fait
 
-**Via le tableau de bord Supabase :**
+Poser une question dans l'application, puis vérifier la réponse de la fonction
+(étape 4). Si `claudeActive` vaut déjà `true`, la synchronisation automatique a
+fait le travail : passez directement à l'étape 4.
 
-1. **Edge Functions** → `catholic-orchestrator` → onglet **Code**
-2. Vérifier que le code correspond au nouveau (présence de `../_shared/claude.ts`)
-3. Si votre projet est relié à GitHub, utiliser **Deploy / Redeploy**
-4. Répéter pour `chatbot` et `liturgy-meditation`
+### B. Sinon : coller le code dans l'éditeur Supabase
 
-**Via la ligne de commande :**
+Pour chacune des 3 fonctions :
+
+1. **Edge Functions** → sélectionner la fonction (`catholic-orchestrator`,
+   puis `chatbot`, puis `liturgy-meditation`)
+2. Onglet **Code** (ou bouton **Edit**)
+3. Dans l'éditeur, tout sélectionner (Ctrl+A) puis **supprimer**
+4. Coller le contenu correspondant (récupéré à l'étape 1)
+5. Cliquer sur **Deploy updates** (ou **Save & Deploy**)
+6. Attendre le message de succès avant de passer à la suivante
+
+Fichiers à coller :
+
+| Fonction Supabase | Contenu à coller |
+| --- | --- |
+| `catholic-orchestrator` | `supabase/functions/catholic-orchestrator/index.ts` |
+| `chatbot` | `supabase/functions/chatbot/index.ts` |
+| `liturgy-meditation` | `supabase/functions/liturgy-meditation/index.ts` |
+
+> **Réglage à conserver** : pour `catholic-orchestrator`, l'option
+> **Enforce JWT verification** doit rester **désactivée** (`verify_jwt = false`
+> dans `supabase/config.toml`), car la fonction gère elle-même
+> l'authentification et les quotas.
+
+### C. Variante ligne de commande (si vous l'avez un jour)
 
 ```sh
 supabase link --project-ref xfbjowupnffoykyhaqoz
@@ -101,17 +117,14 @@ supabase functions deploy chatbot
 supabase functions deploy liturgy-meditation
 ```
 
-> `--no-verify-jwt` est nécessaire pour l'orchestrateur : il gère lui-même
-> l'authentification et les quotas (déjà configuré dans `supabase/config.toml`).
-
 ---
 
 ## Étape 4 — Vérifier que Claude répond
 
-1. Ouvrir l'application et poser une question dans l'onglet de consultation.
-2. Ouvrir la console du navigateur (F12 → onglet **Network**) → cliquer sur
-   l'appel `catholic-orchestrator` → onglet **Response**.
-3. Chercher le bloc `meta` :
+1. Ouvrir l'application et poser une question de foi dans la consultation.
+2. Ouvrir la console du navigateur : **F12** → onglet **Network**
+3. Cliquer sur l'appel `catholic-orchestrator` → onglet **Response** (ou **Preview**)
+4. Chercher le bloc `meta` :
 
 ```json
 "meta": {
@@ -125,37 +138,37 @@ supabase functions deploy liturgy-meditation
 | Ce que vous voyez | Signification |
 | --- | --- |
 | `"claudeActive": true` | ✅ Claude répond. C'est terminé. |
-| `"providers": ["gemini"]` | Claude a échoué → repli automatique. Voir l'étape 5. |
-| `"providers": ["deepseek"]` | Claude a échoué → repli DeepSeek. Voir l'étape 5. |
+| `"providers": ["gemini"]` | Claude a échoué → repli automatique. Étape 5. |
+| `"providers": ["deepseek"]` | Claude a échoué → repli DeepSeek. Étape 5. |
 
-Les logs de la fonction affichent aussi une ligne
-`Consultation servie par : claude`.
+Pour le chatbot (bulle de discussion) et la méditation du jour, le résultat de
+Claude est visible directement dans la réponse affichée ; en cas d'échec,
+consulter les logs (étape 5).
 
 ---
 
 ## Étape 5 — Si Claude n'est pas utilisé
 
-Consulter les logs : **Edge Functions → catholic-orchestrator → Logs**
-(ou `supabase functions logs catholic-orchestrator`). Le message exact y figure :
+**Edge Functions → la fonction → onglet Logs**. Le message exact y figure :
 
 | Message dans les logs | Cause | Correction |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée` | Secret absent | Étape 2 |
-| `Claude a refusé l'appel. 401` | Clé invalide / révoquée | Régénérer la clé sur console.anthropic.com |
+| `ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée` | Secret absent sur la fonction | Étape 2, puis redéployer |
+| `Claude a refusé l'appel. 401` | Clé invalide ou révoquée | Régénérer la clé sur console.anthropic.com |
 | `Claude a refusé l'appel. 404` | Modèle inexistant ou retiré | Corriger le secret `CLAUDE_MODEL` |
-| `Claude a refusé l'appel. 400` | Requête mal formée | Signaler le message d'erreur complet |
+| `Claude a refusé l'appel. 400` | Requête mal formée | Noter le message complet et le signaler |
 | `429` / `5xx` | Limite ou incident Anthropic | Réessayer ; le repli protège l'application |
+
+Un log `Consultation servie par : claude` confirme le bon fonctionnement.
 
 ---
 
 ## Changer de modèle plus tard (sans toucher au code)
 
-Il suffit d'ajouter un secret Supabase, puis de redéployer (ou d'attendre le
-prochain déploiement) :
-
 ```sh
+# ou via le tableau de bord : Project Settings → Edge Functions → Secrets
 supabase secrets set CLAUDE_MODEL=claude-sonnet-5-5
 ```
 
 `claude-sonnet-4-5-20250929` est en fin de vie sur l'API Anthropic (retrait
-annoncé au 30 novembre 2026). Le jour venu, ce simple réglage suffit.
+annoncé au 30 novembre 2026). Ce simple réglage suffira, sans redéploiement.

@@ -74,7 +74,12 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 ## Moteur IA : Claude (Anthropic) en priorité
 
 Les Edge Functions qui produisent du texte (`catholic-orchestrator`, `chatbot`,
-`liturgy-meditation`) partagent un client unique : `supabase/functions/_shared/claude.ts`.
+`liturgy-meditation`) intègrent chacune le même bloc client Claude (identique dans les
+trois fichiers : toute correction doit être reportée ailleurs). Elles restent
+**autonomes, en un seul fichier**, afin de pouvoir être déployées depuis l'éditeur web
+de Supabase, qui ne gère qu'un fichier par fonction (le dossier `_shared` n'y est pas
+visible et les fichiers ajoutés sont écrasés au déploiement).
+
 **Claude est le moteur principal**, avec repli automatique si Anthropic est indisponible :
 
 | Ordre | Fournisseur | Fonctions concernées | Secret requis |
@@ -92,7 +97,7 @@ reste donc disponible.
 ### Mise en forme des messages (important)
 
 L'API Anthropic est stricte : elle rejette en 400 les conversations qui ne commencent
-pas par un message `user` et les rôles qui ne s'alternent pas. `normalizeForClaude()`
+pas par un message `user` et les rôles qui ne s'alternent pas. `normalizeClaudeMessages()`
 applique donc systématiquement : consignes système concaténées en un seul `system`,
 contenus vides supprimés, messages consécutifs de même rôle fusionnés, premier
 message forcé en `user`, historique borné à 40 messages (puis re-nettoyé).
@@ -129,8 +134,8 @@ supabase secrets set CLAUDE_ROUTER_MODEL=claude-haiku-4-5-20251001
 
 ### Déploiement des fonctions
 
-`_shared/claude.ts` étant importé en chemin relatif, il est empaqueté automatiquement
-avec chaque fonction — aucune commande supplémentaire n'est nécessaire.
+Chaque fonction étant un fichier unique, elle se déploie aussi bien par la ligne de
+commande que par l'éditeur web du tableau de bord Supabase.
 
 ```sh
 supabase functions deploy catholic-orchestrator --no-verify-jwt
