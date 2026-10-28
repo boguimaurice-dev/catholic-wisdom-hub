@@ -71,3 +71,41 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Moteur IA : Claude (Anthropic) en priorité
+
+Toutes les fonctions Edge qui produisent du texte (`catholic-orchestrator`, `chatbot`,
+`liturgy-meditation`) utilisent **Claude en priorité absolue**, puis basculent
+automatiquement sur un fournisseur de secours si Claude est indisponible :
+
+| Ordre | Fournisseur | Fonctions concernées | Secret requis |
+| --- | --- | --- | --- |
+| 1 (principal) | **Claude — Anthropic** (`claude-sonnet-4-5-20250929`) | toutes | `ANTHROPIC_API_KEY` (ou `claude_api`) |
+| 2 (secours) | DeepSeek | `catholic-orchestrator` | `DEEPSEEK_API_KEY` (ou `deeseek_api_key`) |
+| 3 (dernier recours) | Lovable AI Gateway (Gemini) | toutes | `LOVABLE_API_KEY` |
+
+Le repli est silencieux : si Claude répond, aucun autre fournisseur n'est appelé.
+En cas d'erreur transitoire (429, 5xx, timeout), l'appel Claude est retenté une fois
+avant de passer au secours.
+
+### Secrets à configurer
+
+```sh
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+# optionnel : changer de modèle sans toucher au code
+supabase secrets set CLAUDE_MODEL=claude-sonnet-4-5-20250929
+# optionnel : modèle (plus rapide/économique) utilisé pour le routage des experts
+supabase secrets set CLAUDE_ROUTER_MODEL=claude-haiku-4-5-20251001
+```
+
+### Déploiement des fonctions
+
+```sh
+supabase functions deploy catholic-orchestrator --no-verify-jwt
+supabase functions deploy chatbot
+supabase functions deploy liturgy-meditation
+```
+
+> `claude-sonnet-4-5-20250929` est annoncé en fin de vie sur l'API Anthropic
+> (retrait prévu le 30 novembre 2026). Le jour venu, il suffit de modifier le secret
+> `CLAUDE_MODEL` (par exemple `CLAUDE_MODEL=claude-sonnet-5-5`) : aucun changement de
+> code ni redéploiement n'est nécessaire.

@@ -168,51 +168,107 @@ async function callDeepSeek(messages: Message[]): Promise<string | null> {
   }
 }
 
-async function callClaude(messages: Message[]): Promise<string | null> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api");
-  if (!key) return null;
+// ---------------------------------------------------------------------------
+// Claude (Anthropic) — moteur principal de l'application
+// ---------------------------------------------------------------------------
 
+// Modèles Claude. Surchargables via les secrets Supabase sans redéploiement de code.
+const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") || "claude-sonnet-4-5-20250929";
+// Modèle optionnel, plus rapide/moins coûteux, pour l'analyse de routage (JSON).
+const CLAUDE_ROUTER_MODEL = Deno.env.get("CLAUDE_ROUTER_MODEL") || CLAUDE_MODEL;
+
+const CLAUDE_MAX_TOKENS = 8192;
+
+function getAnthropicKey(): string | null {
+  return Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("claude_api") || null;
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 529;
+}
+
+async function callClaude(
+  messages: Message[],
+  options: { model?: string; maxTokens?: number; temperature?: number } = {},
+): Promise<string | null> {
+  const key = getAnthropicKey();
+  if (!key) {
+    console.warn("Claude désactivé : ANTHROPIC_API_KEY (ou claude_api) n'est pas configurée.");
+    return null;
+  }
+
+  const model = options.model || CLAUDE_MODEL;
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const rest = messages.filter((m) => m.role !== "system");
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        system: system || undefined,
-        messages: rest.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
+  const payload = {
+    model,
+    max_tokens: options.maxTokens ?? CLAUDE_MAX_TOKENS,
+    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+    ...(system ? { system } : {}),
+    messages: rest.map((m) => ({ role: m.role, content: m.content })),
+  };
 
-    if (!response.ok) {
-      console.warn("Claude unavailable:", response.status, await response.text());
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const detail = await response.text();
+        console.warn("Claude unavailable:", response.status, detail.slice(0, 300));
+        if (attempt === 0 && isRetryableStatus(response.status)) {
+          await new Promise((r) => setTimeout(r, 800));
+          continue;
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      const text = (data.content || [])
+        .map((c: { type?: string; text?: string }) => (c.type === "text" ? c.text || "" : ""))
+        .join("");
+      return text.trim() || null;
+    } catch (e) {
+      console.warn("Claude call failed:", e);
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
       return null;
     }
-
-    const data = await response.json();
-    const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
-    return text || null;
-  } catch (e) {
-    console.warn("Claude call failed:", e);
-    return null;
   }
+
+  return null;
 }
 
-async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
-  // Priorité : DeepSeek -> Claude -> Lovable AI Gateway
+/**
+ * Appel IA unifié.
+ * 1. Priorité absolue : Claude (Anthropic)
+ * 2. Secours : DeepSeek
+ * 3. Dernier recours : Lovable AI Gateway (Gemini)
+ */
+async function callAI(
+  messages: Message[],
+  fallbackModel = "google/gemini-2.5-pro",
+  claudeModel?: string,
+): Promise<string> {
+  // 1. Priorité absolue : Claude (Anthropic)
+  const claude = await callClaude(messages, claudeModel ? { model: claudeModel } : {});
+  if (claude) return claude;
+
+  // 2. Secours : DeepSeek
   const deepseek = await callDeepSeek(messages);
   if (deepseek) return deepseek;
 
-  const claude = await callClaude(messages);
-  if (claude) return claude;
-
+  // 3. Dernier recours : Lovable AI Gateway
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "Aucun fournisseur IA disponible");
 
@@ -223,7 +279,7 @@ async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro
       "Authorization": `Bearer ${LOVABLE_API_KEY}`,
     },
     body: JSON.stringify({
-      model,
+      model: fallbackModel,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 4096,
     }),
@@ -348,10 +404,10 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme:
 
 Question: ${question}`;
 
-    const analyseResponse = await callLovableAI([
+    const analyseResponse = await callAI([
       { role: "system", content: analysePrompt },
       { role: "user", content: question }
-    ], "google/gemini-3-flash-preview");
+    ], "google/gemini-3-flash-preview", CLAUDE_ROUTER_MODEL);
 
     let selectedExperts: string[] = [];
     let analyseRaison = "";
@@ -366,6 +422,13 @@ Question: ${question}`;
     } catch {
       selectedExperts = ["theologien"];
       analyseRaison = "Consultation théologique par défaut";
+    }
+
+    // Filet de sécurité : si le routeur n'a pas renvoyé de JSON exploitable,
+    // on consulte au moins le théologien plutôt que de répondre sans expert.
+    if (selectedExperts.length === 0) {
+      selectedExperts = ["theologien"];
+      analyseRaison = analyseRaison || "Consultation théologique par défaut";
     }
 
     // Restriction des experts avancés pour le plan gratuit
@@ -384,7 +447,7 @@ Question: ${question}`;
       const expert = EXPERTS[expertKey as keyof typeof EXPERTS];
       if (!expert) return null;
 
-      const expertResponse = await callLovableAI([
+      const expertResponse = await callAI([
         { role: "system", content: expert.systemPrompt },
         ...contextMessages,
         { role: "user", content: question }
@@ -420,7 +483,7 @@ Crée une réponse unifiée et bien structurée qui:
 
 Format ta réponse en markdown avec une belle mise en page.`;
 
-    const syntheseResponse = await callLovableAI([
+    const syntheseResponse = await callAI([
       { role: "system", content: synthesePrompt },
       { role: "user", content: "Crée la synthèse" }
     ]);
