@@ -19,7 +19,6 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      includeAssets: ["favicon.svg", "icons/apple-touch-icon.png"],
       manifest: {
         id: "/",
         name: "Coffre — Mots de passe & secrets",
