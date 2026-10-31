@@ -142,3 +142,23 @@ supabase functions deploy catholic-orchestrator --no-verify-jwt
 supabase functions deploy chatbot
 supabase functions deploy liturgy-meditation
 ```
+
+---
+
+## 🔐 Coffre — gestionnaire de mots de passe, clés API & notes (PWA)
+
+Le dossier [`safevault/`](./safevault) contient **Coffre**, une application **autonome** de gestion de
+secrets : mots de passe, clés API et notes confidentielles, chiffrés localement (AES-256-GCM +
+PBKDF2-SHA256 600 000 itérations, zéro connaissance), installable sur mobile et ordinateur.
+
+- Application : `safevault/` (Vite + React + TypeScript, sans backend ni dépendance réseau)
+- Guide complet, sécurité et déploiement : [`safevault/README.md`](./safevault/README.md)
+- Déploiement Vercel : importer ce dépôt avec **Root Directory = `safevault`**
+
+```sh
+cd safevault
+npm install
+npm run dev     # http://localhost:5173
+npm test
+npm run build
+```
