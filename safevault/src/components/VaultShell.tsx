@@ -303,6 +303,28 @@ export function VaultShell() {
                     </IconButton>
                   ) : null}
                 </div>
+                <div className="mobile-filters" role="tablist" aria-label="Filtrer">
+                  {(
+                    [
+                      { id: "all", label: "Tous" },
+                      { id: "favorites", label: "Favoris" },
+                      { id: "login", label: "Connexions" },
+                      { id: "apikey", label: "Clés API" },
+                      { id: "note", label: "Notes" },
+                    ] as Array<{ id: View; label: string }>
+                  ).map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={view === entry.id}
+                      className={`chip ${view === entry.id ? "is-active" : ""}`.trim()}
+                      onClick={() => setView(entry.id)}
+                    >
+                      {entry.label}
+                    </button>
+                  ))}
+                </div>
                 <ItemList
                   items={filtered}
                   selectedId={selectedId}
