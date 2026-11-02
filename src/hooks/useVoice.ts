@@ -1,14 +1,34 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
-type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+interface SpeechRecognitionAlternativeLike { transcript: string }
+interface SpeechRecognitionResultLike { 0: SpeechRecognitionAlternativeLike }
+interface SpeechRecognitionResultsLike { 0: SpeechRecognitionResultLike }
+interface SpeechRecognitionResultEventLike { results: SpeechRecognitionResultsLike }
+interface SpeechRecognitionErrorEventLike { error: string }
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
 
 export function useVoiceInput() {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const startListening = useCallback((onResult: (text: string) => void) => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as SpeechRecognitionWindow;
+    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("La reconnaissance vocale n'est pas supportée par votre navigateur.");
       return;
@@ -19,12 +39,12 @@ export function useVoiceInput() {
     recognition.interimResults = false;
     recognition.continuous = false;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event) => {
       const text = event.results[0][0].transcript;
       onResult(text);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       if (event.error === "not-allowed") {
         toast.error("Veuillez autoriser l'accès au microphone.");
@@ -107,7 +127,7 @@ export function useTTS() {
         u.pitch = 1;
         if (frenchVoice) u.voice = frenchVoice;
         u.onend = () => speakChunk(i + 1);
-        u.onerror = (e: any) => {
+        u.onerror = (e) => {
           if (e?.error === "canceled" || e?.error === "interrupted") return;
           console.error("TTS error:", e?.error);
           speakChunk(i + 1);

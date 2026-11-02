@@ -40,18 +40,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   const t = (key: string): string => {
-    const keys = key.split(".");
-    let value: any = translations[language];
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    if (typeof value === "string") return value;
-    // Fallback to French
-    value = translations.fr;
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    return typeof value === "string" ? value : key;
+    const resolve = (tree: TranslationTree): string | undefined => {
+      let value: TranslationValue = tree;
+      for (const part of key.split(".")) {
+        if (typeof value === "string" || !(part in value)) return undefined;
+        value = value[part];
+      }
+      return typeof value === "string" ? value : undefined;
+    };
+
+    return resolve(translations[language]) ?? resolve(translations.fr) ?? key;
   };
 
   return (
@@ -61,7 +59,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const translations: Record<Language, Record<string, any>> = {
+type TranslationValue = string | TranslationTree;
+type TranslationTree = { [key: string]: TranslationValue };
+
+const translations: Record<Language, TranslationTree> = {
   fr: {
     agents: {
       theologien: "Théologien", liturgiste: "Liturgiste", spiritualite: "Spécialiste de spiritualité",

@@ -1,32 +1,36 @@
-# Revue UX et pistes d’optimisation
+# Revue UX, qualité et déploiement
 
-## Changements appliqués dans cette passe
+## Changements réalisés
 
-- **Lisibilité** : texte courant désormais en sans-sérif, taille de base de 16 px et interlignage plus confortable. Les réponses de consultation sont plus grandes, les cartes de thèmes et les détails des spécialistes ne descendent plus à 9–11 px.
-- **Mobile** : barre d’en-tête qui peut s’organiser sur deux lignes, spécialités consultables dans une rangée à défilement horizontal, champ de saisie adapté au clavier mobile et aux zones de sécurité des téléphones.
-- **Noms des agents** : retrait des noms de personnes historiques/arbitraires au profit de fonctions explicites, avec libellés localisés en français, anglais, espagnol et portugais. Les anciennes consultations sont également affichées avec le nom de fonction correspondant à leur clé.
-- **Accessibilité** : focus clavier plus visible, prise en compte de la préférence « réduire les animations », cibles tactiles plus confortables.
-- **Export HTML** : échappement des contenus dynamiques (question, synthèse, contributions, etc.) avant leur insertion dans le fichier exporté.
-- **Mise en page globale** : suppression des règles de l’ancien starter Vite qui auraient contraint l’application à une largeur de 1 280 px et ajouté un padding global si `App.css` était chargé.
+- **Lisibilité et mobile** : texte de base à 16 px, réponses plus confortables, barre d’en-tête adaptable, spécialistes en rangée défilante, saisie mobile avec zone de sécurité.
+- **Noms des agents** : rôles explicites et libellés traduits en français, anglais, espagnol et portugais ; les consultations enregistrées utilisent aussi les noms de fonction.
+- **Accessibilité et sûreté** : focus clavier visible, réduction des animations respectée, échappement des contenus de l’export HTML.
+- **Qualité du code** : retrait de plusieurs `any`, types de réponses externes, dépendances de hooks corrigées, configuration Tailwind/Vite modernisée.
+- **Installation et déploiement** : `package-lock.json` régénéré et compatible avec `npm ci`, versions de plugins alignées sur Vite 8, `vercel.json` avec build, sortie `dist` et fallback SPA. `.env.example` documente les variables publiques attendues.
+- **CI** : workflow GitHub ajouté pour exécuter installation, lint, tests, vérification TypeScript et build sur les pull requests.
 
-## Constats et recommandations restantes
+## Constats et actions encore nécessaires
 
 ### Priorité haute
 
-1. **Réduire le JavaScript livré au premier chargement.** Le build de production signale un chunk principal minifié d’environ **728 kB** (et déclenche l’avertissement Vite au-delà de 500 kB). Mesurer le poids avec un analyseur de bundle, puis découper les dépendances lourdes par route/fonctionnalité et examiner notamment les bibliothèques d’animation et de visualisation.
-2. **Ajouter des tests d’interface responsive et d’accessibilité.** Le dépôt ne contient actuellement qu’un test unitaire très simple. Couvrir au minimum les écrans étroits, le clavier, le zoom/agrandissement du texte, le thème sombre et les états de chargement/erreur.
-3. **Valider les citations et les limites des réponses théologiques.** Afficher les références vérifiables et une indication claire quand une réponse est une synthèse d’IA, pas un avis pastoral ou canonique faisant autorité.
+1. **Vérifier le projet Vercel**. Le projet relié au dépôt échoue parce que son réglage *Root Directory* pointe vers `safevault`, dossier absent de cette branche. Ce réglage se corrige dans les paramètres Vercel, pas dans le code. Le projet possède déjà une production distincte : ne pas modifier sa racine sans confirmer qu’il s’agit bien de Catholic Wisdom Hub. Le plus sûr est un projet Vercel dédié, à la racine du dépôt ; `vercel.json` fournit déjà les réglages de build et le fallback SPA.
+2. **Configurer les variables Supabase sur Vercel** : `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` pour Preview et Production. Ne jamais mettre de clé `service_role` dans le navigateur. Le projet Supabase référencé par l’application n’est pas visible dans le compte Supabase connecté à Arena ; ses URL d’authentification ne peuvent donc pas être vérifiées ici.
+3. **Publier la même révision sur Lovable** : relier le projet à ce dépôt et à `main`, puis synchroniser/publier depuis Lovable. L’intégration Lovable n’est pas disponible dans cette session, donc son branchement et son bouton Publish ne peuvent pas être vérifiés ici.
+4. **Alléger le JavaScript initial**. Le build signale encore un chunk principal minifié d’environ **655 kB**. Analyser ce chunk et différer davantage les dépendances lourdes.
+5. **Étoffer les tests** : le dépôt n’a qu’un test unitaire simple. Ajouter des tests d’interface responsive, clavier, contraste, zoom, états d’erreur et connexion Supabase.
 
 ### Priorité moyenne
 
-4. **Clarifier la navigation mobile.** L’en-tête concentre plusieurs actions. Tester sur de vrais écrans 320–390 px ; si elle reste trop chargée, regrouper les liens secondaires dans un menu accessible.
-5. **Mieux gérer les erreurs d’enregistrement.** La consultation peut réussir alors que sa sauvegarde ou la mise à jour du quota échoue. Distinguer explicitement « réponse reçue » et « historique/quota mis à jour », avec une possibilité de réessayer.
-6. **Vérifier le budget de performance de chaque page.** Fixer des objectifs de poids et mesurer LCP/CLS/INP sur mobile lent, plutôt que d’optimiser seulement le temps du build.
-7. **Rendre l’installation reproductible.** `npm ci` échoue actuellement : le `package-lock.json` ne correspond pas au `package.json`, et `vite-plugin-pwa@0.21.1` annonce une plage de versions de Vite qui n’inclut pas Vite 8. Aligner les versions et régénérer le lockfile avec la stratégie retenue avant le prochain déploiement.
-8. **Revoir la documentation projet.** Le README contient encore des références de modèle Lovable (`REPLACE_WITH_PROJECT_ID`) et des instructions génériques ; les remplacer par les étapes réelles de configuration, de lancement et de déploiement du produit.
+6. Valider les citations théologiques et signaler clairement les limites d’une synthèse IA.
+7. Tester sur de vrais écrans étroits ; regrouper les actions secondaires dans un menu mobile si nécessaire.
+8. Distinguer le succès de la réponse du succès de sa sauvegarde/quota, avec une action de reprise.
+9. Remplacer dans le README les références génériques Lovable (`REPLACE_WITH_PROJECT_ID`) par la configuration réelle du produit.
 
-## Vérifications de cette passe
+## Vérifications effectuées
 
-- `npm run build` : réussi ; avertissement de bundle principal volumineux encore présent.
+- `npm ci` : réussi sans options spéciales.
+- `npm run typecheck` : réussi (application et configuration Vite/Tailwind).
+- `npm run lint` : réussi, avec 10 avertissements Fast Refresh dans des composants UI/contextes existants.
 - `npm test -- --reporter=dot` : 1 test réussi.
-- `npm run lint` : échoue sur des erreurs déjà présentes dans plusieurs fichiers non modifiés (types `any`, interfaces vides, règle `require`, etc.). Il faudra une passe dédiée de remise en état du lint ; ces erreurs ne sont pas corrigées dans cette refonte UX.
+- `npm run build` : réussi ; avertissement de chunk principal d’environ 656 kB toujours présent.
+- `npm audit --omit=dev` : aucune vulnérabilité dans les dépendances de production ; des vulnérabilités modérées subsistent dans des outils de développement.

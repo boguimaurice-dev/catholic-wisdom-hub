@@ -215,6 +215,20 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+interface AelfLecture {
+  type: string;
+  titre?: string;
+  ref?: string;
+  intro_lue?: string;
+  contenu?: string;
+  refrain_psalmique?: string;
+}
+
+interface AelfResponse {
+  informations?: Record<string, unknown>;
+  messes?: Array<{ lectures?: AelfLecture[] }>;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -224,13 +238,13 @@ serve(async (req) => {
 
     const aelfRes = await fetch(`https://api.aelf.org/v1/messes/${today}/france`);
     if (!aelfRes.ok) throw new Error("Impossible de récupérer les textes liturgiques");
-    const aelf = await aelfRes.json();
+    const aelf = await aelfRes.json() as AelfResponse;
 
     const info = aelf.informations || {};
     const messe = (aelf.messes && aelf.messes[0]) || {};
-    const lectures = (messe.lectures || []).map((l: any) => ({
+    const lectures = (messe.lectures || []).map((l) => ({
       type: l.type,
-      titre: l.titre,
+      titre: l.titre || "",
       reference: l.ref || l.intro_lue || "",
       contenu: stripHtml(l.contenu || ""),
       refrain: l.refrain_psalmique ? stripHtml(l.refrain_psalmique) : "",
@@ -238,7 +252,7 @@ serve(async (req) => {
 
     const lecturesText = lectures
       .map(
-        (l: any) =>
+        (l) =>
           `### ${l.type.toUpperCase()} — ${l.reference}\n${l.titre ? `*${l.titre}*\n\n` : ""}${l.contenu}`
       )
       .join("\n\n---\n\n");

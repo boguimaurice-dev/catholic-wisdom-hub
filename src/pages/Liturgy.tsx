@@ -18,9 +18,15 @@ interface Lecture {
   refrain?: string;
 }
 
+interface LiturgyInformation {
+  ligne1?: string;
+  fete?: string;
+  couleur?: string;
+}
+
 interface LiturgyData {
   date: string;
-  informations: any;
+  informations: LiturgyInformation;
   lectures: Lecture[];
   meditation: string;
 }

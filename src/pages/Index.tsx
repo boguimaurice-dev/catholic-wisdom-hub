@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
 
@@ -50,8 +51,8 @@ export default function Index() {
       user_id: user.id,
       question,
       synthesis: result.synthesis,
-      expert_contributions: result.expertContributions,
-      selected_experts: result.analysis.selectedExperts,
+      expert_contributions: result.expertContributions as unknown as Json,
+      selected_experts: result.analysis.selectedExperts as unknown as Json,
       analysis_reason: result.analysis.reason,
     });
   };
