@@ -53,7 +53,7 @@ export function ThemeCards({ onSelectSuggestion }: ThemeCardsProps) {
                     {t(`themes.${theme.key}.title`)}
                   </h4>
                 </div>
-                <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
                   {t(`themes.${theme.key}.desc`)}
                 </p>
                 <div className="space-y-1.5">
@@ -61,7 +61,7 @@ export function ThemeCards({ onSelectSuggestion }: ThemeCardsProps) {
                     <button
                       key={s}
                       onClick={() => onSelectSuggestion(s)}
-                      className="w-full text-left text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg bg-background/60 hover:bg-background border border-transparent hover:border-secondary/30 text-foreground/80 hover:text-foreground transition-all group/btn"
+                      className="w-full text-left text-sm px-3 py-2 rounded-lg bg-background/60 hover:bg-background border border-transparent hover:border-secondary/30 text-foreground/80 hover:text-foreground transition-all group/btn"
                     >
                       <span className="text-secondary/70 group-hover/btn:text-secondary mr-1">›</span>
                       {s}
