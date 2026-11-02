@@ -175,34 +175,34 @@ async function callClaude(messages: Message[]): Promise<string | null> {
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const rest = messages.filter((m) => m.role !== "system");
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        system: system || undefined,
-        messages: rest.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn("Claude unavailable:", response.status, await response.text());
-      return null;
+  for (const model of ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"]) {
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system: system || undefined,
+          messages: rest.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+      if (!response.ok) {
+        console.warn("Claude unavailable:", model, response.status, await response.text());
+        continue;
+      }
+      const data = await response.json();
+      const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
+      if (text) return text;
+    } catch (e) {
+      console.warn("Claude call failed:", model, e);
     }
-
-    const data = await response.json();
-    const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
-    return text || null;
-  } catch (e) {
-    console.warn("Claude call failed:", e);
-    return null;
   }
+  return null;
 }
 
 async function callOpenAI(messages: Message[]): Promise<string | null> {
@@ -231,15 +231,15 @@ async function callOpenAI(messages: Message[]): Promise<string | null> {
 }
 
 async function callLovableAI(messages: Message[], model = "google/gemini-2.5-pro"): Promise<string> {
-  // Priorité : DeepSeek -> OpenAI -> Claude -> Lovable AI Gateway
+  // Priorité : Claude -> DeepSeek -> OpenAI -> Lovable AI Gateway
+  const claude = await callClaude(messages);
+  if (claude) return claude;
+
   const deepseek = await callDeepSeek(messages);
   if (deepseek) return deepseek;
 
   const openai = await callOpenAI(messages);
   if (openai) return openai;
-
-  const claude = await callClaude(messages);
-  if (claude) return claude;
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new HttpError(500, "Aucun fournisseur IA disponible");
