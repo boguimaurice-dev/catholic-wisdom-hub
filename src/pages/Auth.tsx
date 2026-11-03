@@ -41,8 +41,8 @@ export default function Auth() {
         if (error) throw error;
         toast.success(t("auth.checkEmail"));
       }
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t("auth.authError"));
+    } catch (error: any) {
+      toast.error(error.message || t("auth.authError"));
     } finally {
       setLoading(false);
     }

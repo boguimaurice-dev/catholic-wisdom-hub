@@ -2,7 +2,10 @@
   "name": "L'Agent Orchestrateur Catholique (AOC)",
   "short_name": "AOC",
   "description": "Huit regards, une vérité : la richesse de la foi catholique orchestrée pour vous",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
+  "lang": "fr",
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#c9a84c",
@@ -16,6 +19,12 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -29,8 +29,8 @@ export default function ResetPassword() {
       if (error) throw error;
       toast.success("Mot de passe mis à jour !");
       navigate("/");
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Une erreur est survenue.");
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

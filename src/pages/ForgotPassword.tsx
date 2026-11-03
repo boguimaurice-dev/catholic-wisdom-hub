@@ -22,8 +22,8 @@ export default function ForgotPassword() {
       if (error) throw error;
       setSent(true);
       toast.success("Email de réinitialisation envoyé !");
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Une erreur est survenue.");
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

@@ -86,9 +86,8 @@ export function Chatbot() {
           }
         }
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("chatbot.connectionError");
-      upsertAssistant(`⚠️ ${message}`);
+    } catch (e: any) {
+      upsertAssistant(`⚠️ ${e.message}`);
     } finally {
       setIsLoading(false);
     }

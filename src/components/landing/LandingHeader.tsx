@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Cross } from "lucide-react";
+import { InstallButton } from "@/components/InstallButton";
 
 export function LandingHeader() {
   const { t } = useLanguage();
@@ -22,6 +23,7 @@ export function LandingHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           <LanguageSelector />
           <ThemeToggle />
+          <InstallButton />
           <Link to="/auth" className="hidden sm:block">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               {t("landing.login")}
