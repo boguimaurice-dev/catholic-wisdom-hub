@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
-import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
@@ -11,6 +11,9 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "virtual:pwa-register": path.resolve(__dirname, "./src/test/pwaRegisterStub.ts"),
+    },
   },
 });

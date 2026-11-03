@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,14 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
 
-  const verifyPayment = useCallback(async (reference: string) => {
+  useEffect(() => {
+    const reference = searchParams.get("reference");
+    if (reference) {
+      verifyPayment(reference);
+    }
+  }, [searchParams]);
+
+  const verifyPayment = async (reference: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -44,15 +51,10 @@ export default function Pricing() {
         await refresh();
         navigate("/pricing", { replace: true });
       }
-    } catch {
+    } catch (err) {
       toast.error(t("common.error"));
     }
-  }, [navigate, refresh, t]);
-
-  useEffect(() => {
-    const reference = searchParams.get("reference");
-    if (reference) void verifyPayment(reference);
-  }, [searchParams, verifyPayment]);
+  };
 
   const handleSubscribe = async (planSlug: string) => {
     if (planSlug === "basique") return;
@@ -90,7 +92,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-4 px-4">
+      <header className="sticky top-0 z-40 bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 shadow-md border-b border-secondary/30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">

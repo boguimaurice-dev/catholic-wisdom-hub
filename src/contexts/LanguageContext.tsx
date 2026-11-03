@@ -40,16 +40,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   const t = (key: string): string => {
-    const resolve = (tree: TranslationTree): string | undefined => {
-      let value: TranslationValue = tree;
-      for (const part of key.split(".")) {
-        if (typeof value === "string" || !(part in value)) return undefined;
-        value = value[part];
-      }
-      return typeof value === "string" ? value : undefined;
-    };
-
-    return resolve(translations[language]) ?? resolve(translations.fr) ?? key;
+    const keys = key.split(".");
+    let value: any = translations[language];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    if (typeof value === "string") return value;
+    // Fallback to French
+    value = translations.fr;
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return typeof value === "string" ? value : key;
   };
 
   return (
@@ -59,23 +61,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-type TranslationValue = string | TranslationTree;
-type TranslationTree = { [key: string]: TranslationValue };
-
-const translations: Record<Language, TranslationTree> = {
+const translations: Record<Language, Record<string, any>> = {
   fr: {
-    agents: {
-      theologien: "Théologien", liturgiste: "Liturgiste", spiritualite: "Spécialiste de spiritualité",
-      historien: "Historien de l’Église", bibliste: "Bibliste", linguiste: "Linguiste et exégète",
-      patristique: "Spécialiste des Pères de l’Église", monastique: "Spécialiste de vie monastique",
-      inProgress: "En consultation", consulted: "Consulté",
-    },
-    agentTitles: {
-      theologien: "Doctrine et enseignement de l’Église", liturgiste: "Célébrations et année liturgique",
-      spiritualite: "Prière et discernement spirituel", historien: "Histoire et tradition chrétiennes",
-      bibliste: "Écriture sainte et exégèse", linguiste: "Langues et contexte des textes",
-      patristique: "Patristique et premiers siècles", monastique: "Tradition monastique et règle de vie",
-    },
     common: {
       back: "Retour",
       loading: "Chargement…",
@@ -235,18 +222,6 @@ const translations: Record<Language, TranslationTree> = {
   },
 
   en: {
-    agents: {
-      theologien: "Theology specialist", liturgiste: "Liturgy specialist", spiritualite: "Spirituality guide",
-      historien: "Church historian", bibliste: "Biblical scholar", linguiste: "Linguist and exegete",
-      patristique: "Patristics specialist", monastique: "Monastic life specialist",
-      inProgress: "In consultation", consulted: "Consulted",
-    },
-    agentTitles: {
-      theologien: "Church teaching and doctrine", liturgiste: "Worship and liturgical year",
-      spiritualite: "Prayer and spiritual discernment", historien: "Christian history and tradition",
-      bibliste: "Sacred Scripture and exegesis", linguiste: "Language and textual context",
-      patristique: "Church Fathers and early Christianity", monastique: "Monastic tradition and rule of life",
-    },
     common: {
       back: "Back",
       loading: "Loading…",
@@ -406,18 +381,6 @@ const translations: Record<Language, TranslationTree> = {
   },
 
   es: {
-    agents: {
-      theologien: "Especialista en teología", liturgiste: "Especialista en liturgia", spiritualite: "Especialista en espiritualidad",
-      historien: "Historiador de la Iglesia", bibliste: "Biblista", linguiste: "Lingüista y exegeta",
-      patristique: "Especialista en patrística", monastique: "Especialista en vida monástica",
-      inProgress: "En consulta", consulted: "Consultado",
-    },
-    agentTitles: {
-      theologien: "Doctrina y enseñanza de la Iglesia", liturgiste: "Celebraciones y año litúrgico",
-      spiritualite: "Oración y discernimiento espiritual", historien: "Historia y tradición cristianas",
-      bibliste: "Sagrada Escritura y exégesis", linguiste: "Lenguas y contexto de los textos",
-      patristique: "Patrística y primeros siglos", monastique: "Tradición monástica y regla de vida",
-    },
     common: {
       back: "Volver",
       loading: "Cargando…",
@@ -577,18 +540,6 @@ const translations: Record<Language, TranslationTree> = {
   },
 
   pt: {
-    agents: {
-      theologien: "Especialista em teologia", liturgiste: "Especialista em liturgia", spiritualite: "Especialista em espiritualidade",
-      historien: "Historiador da Igreja", bibliste: "Biblista", linguiste: "Linguista e exegeta",
-      patristique: "Especialista em patrística", monastique: "Especialista em vida monástica",
-      inProgress: "Em consulta", consulted: "Consultado",
-    },
-    agentTitles: {
-      theologien: "Doutrina e ensinamento da Igreja", liturgiste: "Celebrações e ano litúrgico",
-      spiritualite: "Oração e discernimento espiritual", historien: "História e tradição cristãs",
-      bibliste: "Sagrada Escritura e exegese", linguiste: "Línguas e contexto dos textos",
-      patristique: "Patrística e primeiros séculos", monastique: "Tradição monástica e regra de vida",
-    },
     common: {
       back: "Voltar",
       loading: "Carregando…",

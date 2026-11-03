@@ -1,7 +1,9 @@
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { InstallButton } from "@/components/InstallButton";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,13 +13,13 @@ import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { FAQ } from "@/components/FAQ";
 import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
-import { ConsultationResult, Message } from "@/types/consultation";
+import { Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
+import { TTSControls } from "@/components/TTSControls";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
 
@@ -34,7 +36,8 @@ export default function Index() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { isListening, startListening, stopListening } = useVoiceInput();
-  const { isSpeaking, speak, stop: stopSpeaking } = useTTS();
+  const { status: ttsStatus, speak, pause: pauseSpeaking, resume: resumeSpeaking, stop: stopSpeaking } = useTTS();
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const { canConsult, incrementUsage, remainingConsultations, currentPlan } = useSubscription();
 
   const scrollToBottom = () => {
@@ -45,14 +48,14 @@ export default function Index() {
     scrollToBottom();
   }, [messages, currentPhase]);
 
-  const saveConsultation = async (question: string, result: ConsultationResult) => {
+  const saveConsultation = async (question: string, result: any) => {
     if (!user) return;
     await supabase.from("consultations").insert({
       user_id: user.id,
       question,
       synthesis: result.synthesis,
-      expert_contributions: result.expertContributions as unknown as Json,
-      selected_experts: result.analysis.selectedExperts as unknown as Json,
+      expert_contributions: result.expertContributions,
+      selected_experts: result.analysis.selectedExperts,
       analysis_reason: result.analysis.reason,
     });
   };
@@ -60,15 +63,24 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    const q = input.trim();
+    setInput("");
+    await runConsultation(q, q);
+  };
 
+  const handleDeepen = (point: string, synthesis: string, originalQuestion: string) => {
+    if (!point.trim() || isLoading) return;
+    const enriched = `Approfondissement de la synthèse précédente.\n\nQuestion d'origine : ${originalQuestion}\n\nExtrait de la synthèse déjà donnée :\n${synthesis.slice(0, 4000)}\n\nPoint à approfondir : ${point.trim()}\n\nApprofondis précisément ce point, sans répéter toute la synthèse.`;
+    runConsultation(`🔎 Approfondir : ${point.trim()}`, enriched);
+  };
+
+  const runConsultation = async (displayQuestion: string, question: string) => {
     if (!canConsult()) {
       toast.error(t("index.limitReached").replace("{limit}", String(currentPlan?.max_consultations_per_day || 3)));
       return;
     }
 
-    const question = input.trim();
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    setMessages((prev) => [...prev, { role: "user", content: displayQuestion }]);
     setIsLoading(true);
     setActiveExperts([]);
     setConsultedExperts([]);
@@ -140,6 +152,7 @@ export default function Index() {
     }
   };
 
+  const headerHidden = useHideOnScroll();
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Decorative background */}
@@ -152,12 +165,12 @@ export default function Index() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/3 blur-3xl" />
       </div>
       {/* Header */}
-      <header className="relative overflow-hidden bg-primary text-primary-foreground py-4 px-4 z-10">
+      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} overflow-hidden bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 z-40 shadow-md border-b border-secondary/30`}>
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
                 <Cross className="w-5 h-5 text-secondary" />
@@ -171,7 +184,7 @@ export default function Index() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-1 sm:justify-end sm:gap-2">
+            <div className="flex items-center gap-2">
               {currentPlan && (
                 <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-2.5 py-1 rounded-full border border-primary-foreground/20">
                   <BookOpen className="w-3.5 h-3.5" />
@@ -185,35 +198,36 @@ export default function Index() {
               <Link to="/liturgy">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <BookMarked className="w-4 h-4" />
-                  <span className="sr-only sm:not-sr-only sm:ml-1">Liturgie du jour</span>
+                  <span className="hidden sm:inline ml-1">Liturgie du jour</span>
                 </Button>
               </Link>
               <Link to="/pricing">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <CreditCard className="w-4 h-4" />
-                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.plans")}</span>
+                  <span className="hidden sm:inline ml-1">{t("header.plans")}</span>
                 </Button>
               </Link>
               <Link to="/donation">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Heart className="w-4 h-4" />
-                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.support")}</span>
+                  <span className="hidden sm:inline ml-1">{t("header.support")}</span>
                 </Button>
               </Link>
               <Link to="/history">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <History className="w-4 h-4" />
-                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.history")}</span>
+                  <span className="hidden sm:inline ml-1">{t("header.history")}</span>
                 </Button>
               </Link>
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={resetConversation} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" onClick={resetConversation} className="text-primary-foreground hover:bg-primary-foreground/10">
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={signOut} aria-label="Déconnexion" title="Déconnexion" className="text-primary-foreground hover:bg-primary-foreground/10">
+              <InstallButton compact />
+              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -229,7 +243,7 @@ export default function Index() {
       </div>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto pb-40 sm:pb-36">
+      <main className="flex-1 overflow-y-auto pb-36">
         <div className="max-w-4xl mx-auto p-4">
           {messages.length === 0 ? (
             <>
@@ -270,37 +284,22 @@ export default function Index() {
                   >
                     {message.role === "user" ? (
                       <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
-                        <p className="text-base leading-7 sm:text-lg sm:leading-8">{message.content}</p>
+                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
                       <div className="relative group">
                         <ConsultationDocument
                           result={message.consultationResult}
                           question={messages[idx - 1]?.content || ""}
+                          deepenDisabled={isLoading}
+                          onDeepen={(point) => handleDeepen(point, message.content, messages[idx - 1]?.content || "")}
                         />
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                           className="absolute top-3 right-3 gap-1.5 h-8 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
-                           title={isSpeaking ? t("index.stop") : t("index.listen")}
-                         >
-                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? t("index.stop") : t("index.listen")}
-                         </Button>
+                         <TTSControls className="absolute top-3 right-3" status={ttsStatus} active={speakingIdx === idx} onListen={() => { setSpeakingIdx(idx); speak(message.content); }} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
-                        <p className="text-base leading-7 sm:text-lg sm:leading-8">{message.content}</p>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                           className="absolute top-2 right-2 gap-1.5 h-7 text-xs font-medium bg-card/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground"
-                         >
-                           {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <AudioLines className="w-3.5 h-3.5" />}
-                           {isSpeaking ? t("index.stop") : t("index.listen")}
-                         </Button>
+                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                         <TTSControls className="absolute top-2 right-2" status={ttsStatus} active={speakingIdx === idx} onListen={() => { setSpeakingIdx(idx); speak(message.content); }} onPause={pauseSpeaking} onResume={resumeSpeaking} onStop={stopSpeaking} />
                       </div>
                     )}
                   </motion.div>
@@ -328,7 +327,7 @@ export default function Index() {
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button
@@ -346,7 +345,7 @@ export default function Index() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
-              className="flex-1 min-h-[48px] max-h-36 resize-none text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
+              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
