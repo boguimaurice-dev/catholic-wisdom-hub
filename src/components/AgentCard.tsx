@@ -63,7 +63,7 @@ export function AgentsGrid({
   const expertKeys = Object.keys(EXPERTS_CONFIG);
 
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2">
+    <div className="grid grid-cols-2 min-[360px]:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-2.5">
       {expertKeys.map((key) => (
         <AgentCard
           key={key}

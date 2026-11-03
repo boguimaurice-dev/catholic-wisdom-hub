@@ -219,7 +219,7 @@ export default function Donation() {
                   {t("donation.chooseAmount")}
                 </h3>
 
-                <div className="flex items-center justify-center gap-2 mb-6">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
                   <span className="text-sm text-muted-foreground">{t("donation.currencyLabel")} :</span>
                   {(Object.keys(currencyConfig) as Currency[]).map((c) => (
                     <Button
@@ -238,7 +238,7 @@ export default function Donation() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                   {config.suggestedAmounts.map((amount) => (
                     <Button
                       key={amount}

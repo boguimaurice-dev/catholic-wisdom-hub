@@ -102,7 +102,7 @@ export function Chatbot() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className="fixed bottom-24 right-4 z-50"
+            className="fixed z-50 chatbot-launcher"
           >
             <Button
               onClick={() => setOpen(true)}
@@ -122,7 +122,7 @@ export function Chatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-4 z-50 w-[340px] sm:w-[380px] h-[480px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed z-50 chatbot-window bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
@@ -136,7 +136,7 @@ export function Chatbot() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
                   <Bot className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -179,7 +179,7 @@ export function Chatbot() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
                   placeholder={t("chatbot.placeholder")}
-                  className="flex-1 text-sm bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex-1 min-w-0 text-sm bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
                   disabled={isLoading}
                 />
                 <Button size="icon" onClick={send} disabled={isLoading || !input.trim()} className="h-9 w-9 shrink-0">

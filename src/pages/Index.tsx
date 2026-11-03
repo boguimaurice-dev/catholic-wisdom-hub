@@ -165,18 +165,18 @@ export default function Index() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/3 blur-3xl" />
       </div>
       {/* Header */}
-      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} overflow-hidden bg-primary/90 backdrop-blur-sm text-primary-foreground py-3 sm:py-4 px-4 z-40 shadow-sm border-b border-secondary/25`}>
+      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} overflow-hidden bg-primary/90 backdrop-blur-sm text-primary-foreground py-3 sm:py-4 px-3 sm:px-4 z-40 shadow-sm border-b border-secondary/25`}>
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
+          <div className="flex flex-wrap items-center justify-between gap-y-1.5">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
                 <Cross className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-wide">
+                <h1 className="max-w-[12rem] truncate font-serif text-base font-bold tracking-wide sm:max-w-none sm:text-xl lg:text-2xl">
                   {t("header.title")}
                 </h1>
                 <p className="text-xs opacity-80 hidden sm:block font-light">
@@ -184,9 +184,9 @@ export default function Index() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex basis-full min-w-0 flex-wrap items-center justify-end gap-1 sm:basis-auto sm:gap-2">
               {currentPlan && (
-                <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-2.5 py-1 rounded-full border border-primary-foreground/20">
+                <div className="hidden lg:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-2.5 py-1 rounded-full border border-primary-foreground/20">
                   <BookOpen className="w-3.5 h-3.5" />
                   <span className="font-medium">
                     {currentPlan.max_consultations_per_day >= 999
@@ -196,38 +196,38 @@ export default function Index() {
                 </div>
               )}
               <Link to="/liturgy">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                   <BookMarked className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Liturgie du jour</span>
+                  <span className="hidden lg:inline ml-1">Liturgie du jour</span>
                 </Button>
               </Link>
               <Link to="/pricing">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                   <CreditCard className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.plans")}</span>
+                  <span className="hidden lg:inline ml-1">{t("header.plans")}</span>
                 </Button>
               </Link>
               <Link to="/donation">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                   <Heart className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.support")}</span>
+                  <span className="hidden lg:inline ml-1">{t("header.support")}</span>
                 </Button>
               </Link>
               <Link to="/history">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                   <History className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.history")}</span>
+                  <span className="hidden lg:inline ml-1">{t("header.history")}</span>
                 </Button>
               </Link>
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={resetConversation} className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" onClick={resetConversation} className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
               <InstallButton compact />
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="sm" onClick={signOut} className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -243,7 +243,7 @@ export default function Index() {
       </div>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto pb-36">
+      <main className="min-h-0 flex-1 overflow-y-auto pb-36">
         <div className="max-w-4xl mx-auto p-4">
           {messages.length === 0 ? (
             <>
@@ -327,7 +327,7 @@ export default function Index() {
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
+      <div className="fixed bottom-0 left-0 right-0 safe-area-bottom bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button

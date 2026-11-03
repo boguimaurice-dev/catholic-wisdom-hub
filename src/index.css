@@ -174,3 +174,58 @@
   margin: 1rem 0;
   letter-spacing: 0.5em;
 }
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* Use the visible viewport height on mobile browsers with collapsible toolbars. */
+.min-h-screen {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.safe-area-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.chatbot-launcher {
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.chatbot-window {
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+  width: auto;
+  height: min(30rem, calc(100vh - 7.5rem - env(safe-area-inset-bottom)));
+  max-height: calc(100vh - 7.5rem - env(safe-area-inset-bottom));
+}
+
+@supports (height: 100dvh) {
+  .chatbot-window {
+    height: min(30rem, calc(100dvh - 7.5rem - env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - 7.5rem - env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 640px) {
+  .safe-area-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .chatbot-window {
+    left: auto;
+    right: max(1rem, env(safe-area-inset-right));
+    width: min(24rem, calc(100vw - 2rem));
+  }
+}

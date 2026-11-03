@@ -8,7 +8,7 @@ export function LandingHero() {
   const { t } = useLanguage();
 
   return (
-    <section className="pt-28 pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <section className="pt-20 pb-14 sm:pt-28 sm:pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Decorative background */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary/8 via-accent/3 to-transparent" />
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-secondary/5 blur-3xl" />
@@ -22,12 +22,12 @@ export function LandingHero() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8 flex justify-center"
         >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center shadow-lg shadow-accent/10">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center shadow-lg shadow-accent/10">
             <span className="text-3xl text-accent">✦</span>
           </div>
         </motion.div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-bold leading-[1.1] mb-6 tracking-tight">
+        <h1 className="text-balance text-3xl sm:text-5xl lg:text-7xl font-serif font-bold leading-[1.12] mb-5 sm:mb-6 tracking-tight">
           {t("landing.heroTitle1")}{" "}
           <span className="text-accent relative">
             {t("landing.heroTitle2")}
@@ -37,7 +37,7 @@ export function LandingHero() {
           </span>{" "}
           {t("landing.heroTitle3")}
         </h1>
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
+        <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-12 px-2 leading-relaxed">
           {t("landing.heroDesc")}
         </p>
 
@@ -45,16 +45,16 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16"
         >
-          <Link to="/auth">
-            <Button size="lg" className="text-base px-10 py-7 gap-2 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5 rounded-xl">
+          <Link to="/auth" className="w-full max-w-sm sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto text-sm sm:text-base px-5 sm:px-10 py-6 sm:py-7 gap-2 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 rounded-xl">
               {t("landing.startFree")}
               <ChevronRight className="h-5 w-5" />
             </Button>
           </Link>
-          <a href="#features">
-            <Button variant="outline" size="lg" className="text-base px-10 py-7 rounded-xl border-border/60">
+          <a href="#features" className="w-full max-w-sm sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto text-sm sm:text-base px-5 sm:px-10 py-6 sm:py-7 rounded-xl border-border/60">
               {t("landing.discoverFeatures")}
             </Button>
           </a>
@@ -65,7 +65,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="grid grid-cols-3 gap-4 sm:gap-6 max-w-3xl mx-auto"
+          className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3 sm:gap-6 max-w-3xl mx-auto"
         >
           {[
             { value: "8", label: t("landing.expertsAI"), icon: Users },
