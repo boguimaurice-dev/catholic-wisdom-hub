@@ -30,7 +30,7 @@ export function LandingHeader() {
             </Button>
           </Link>
           <Link to="/auth">
-            <Button size="sm" className="shadow-md hover:shadow-lg transition-shadow">
+            <Button size="sm" className="shadow-sm hover:shadow-md transition-shadow">
               {t("landing.start")}
             </Button>
           </Link>

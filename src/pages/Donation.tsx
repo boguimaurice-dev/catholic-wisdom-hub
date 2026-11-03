@@ -101,7 +101,7 @@ export default function Donation() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 shadow-md border-b border-secondary/30">
+      <header className="sticky top-0 z-40 bg-primary/90 backdrop-blur-sm text-primary-foreground py-3 sm:py-4 px-4 shadow-sm border-b border-secondary/25">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
@@ -219,7 +219,7 @@ export default function Donation() {
                   {t("donation.chooseAmount")}
                 </h3>
 
-                <div className="flex items-center justify-center gap-2 mb-6">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
                   <span className="text-sm text-muted-foreground">{t("donation.currencyLabel")} :</span>
                   {(Object.keys(currencyConfig) as Currency[]).map((c) => (
                     <Button
@@ -238,7 +238,7 @@ export default function Donation() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                   {config.suggestedAmounts.map((amount) => (
                     <Button
                       key={amount}

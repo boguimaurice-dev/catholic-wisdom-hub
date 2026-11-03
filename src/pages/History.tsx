@@ -120,7 +120,7 @@ export default function History() {
   const headerHidden = useHideOnScroll();
   return (
     <div className="min-h-screen bg-background">
-      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} z-40 bg-primary/95 backdrop-blur-md text-primary-foreground py-3 sm:py-4 px-4 shadow-md border-b border-secondary/30`}>
+      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} z-40 bg-primary/90 backdrop-blur-sm text-primary-foreground py-3 sm:py-4 px-4 shadow-sm border-b border-secondary/25`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
