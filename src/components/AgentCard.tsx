@@ -13,38 +13,38 @@ export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.985 }}
       animate={{
         opacity: 1,
-        scale: isActive ? 1.03 : 1,
+        scale: isActive ? 1.015 : 1,
       }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.2 }}
       className={`
-        relative p-2.5 sm:p-3 rounded-lg border transition-all duration-300
+        relative p-3 sm:p-3.5 rounded-xl border border-opacity-80 transition-all duration-200
         ${expert.color}
-        ${isActive ? "ring-2 ring-offset-1 ring-secondary shadow-md" : "shadow-sm"}
-        ${isConsulted && !isActive ? "opacity-80" : ""}
+        ${isActive ? "ring-1 ring-offset-2 ring-secondary/80 shadow-sm" : "shadow-none hover:shadow-sm"}
+        ${isConsulted && !isActive ? "opacity-90" : ""}
       `}
     >
       <div className="flex flex-col items-center text-center gap-1">
         <span className="text-xl sm:text-2xl leading-none">{expert.icon}</span>
         <div className="min-w-0 w-full">
-          <h3 className="font-serif font-bold text-[10px] sm:text-xs leading-tight truncate">{expert.name}</h3>
-          <p className="text-[9px] sm:text-[10px] opacity-70 truncate">{expert.title}</p>
+          <h3 className="font-serif font-semibold text-[11px] sm:text-xs leading-snug truncate">{expert.name}</h3>
+          <p className="text-[10px] sm:text-[11px] opacity-75 truncate">{expert.title}</p>
         </div>
       </div>
       {isActive && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"
+          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500/90 rounded-full ring-2 ring-card"
         />
       )}
       {isConsulted && !isActive && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center"
+          className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 rounded-full ring-2 ring-card flex items-center justify-center"
         >
           <span className="text-white text-[8px]">✓</span>
         </motion.div>
@@ -63,7 +63,7 @@ export function AgentsGrid({
   const expertKeys = Object.keys(EXPERTS_CONFIG);
 
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2">
+    <div className="grid grid-cols-2 min-[360px]:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-2.5">
       {expertKeys.map((key) => (
         <AgentCard
           key={key}

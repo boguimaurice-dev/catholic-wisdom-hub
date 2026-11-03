@@ -6,68 +6,70 @@
 
 @layer base {
   :root {
-    --background: 40 33% 96%;
-    --foreground: 20 25% 12%;
-    --card: 40 30% 94%;
-    --card-foreground: 20 25% 12%;
-    --popover: 40 30% 94%;
-    --popover-foreground: 20 25% 12%;
-    --primary: 20 60% 24%;
-    --primary-foreground: 40 33% 96%;
-    --secondary: 40 80% 50%;
-    --secondary-foreground: 20 25% 12%;
-    --muted: 40 18% 86%;
-    --muted-foreground: 20 15% 42%;
-    --accent: 0 55% 38%;
-    --accent-foreground: 40 33% 96%;
-    --destructive: 0 84% 60%;
+    color-scheme: light;
+    --background: 42 36% 97%;
+    --foreground: 24 20% 17%;
+    --card: 42 31% 99%;
+    --card-foreground: 24 20% 17%;
+    --popover: 42 31% 99%;
+    --popover-foreground: 24 20% 17%;
+    --primary: 21 43% 31%;
+    --primary-foreground: 42 36% 97%;
+    --secondary: 39 48% 79%;
+    --secondary-foreground: 24 22% 19%;
+    --muted: 38 22% 91%;
+    --muted-foreground: 24 13% 42%;
+    --accent: 4 42% 48%;
+    --accent-foreground: 42 36% 97%;
+    --destructive: 0 68% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 25% 80%;
-    --input: 30 25% 80%;
-    --ring: 40 80% 50%;
-    --radius: 0.75rem;
-    --cream: 40 33% 94%;
-    --gold-glow: 40 80% 50%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 32 18% 86%;
+    --input: 32 18% 86%;
+    --ring: 39 45% 63%;
+    --radius: 0.9rem;
+    --cream: 42 35% 95%;
+    --gold-glow: 39 48% 65%;
+    --sidebar-background: 42 30% 98%;
+    --sidebar-foreground: 24 15% 27%;
+    --sidebar-primary: 21 43% 31%;
+    --sidebar-primary-foreground: 42 36% 97%;
+    --sidebar-accent: 38 22% 92%;
+    --sidebar-accent-foreground: 24 20% 17%;
+    --sidebar-border: 32 18% 86%;
+    --sidebar-ring: 39 45% 63%;
   }
 
   .dark {
-    --background: 20 18% 8%;
-    --foreground: 40 30% 92%;
-    --card: 20 18% 11%;
-    --card-foreground: 40 30% 92%;
-    --popover: 20 18% 11%;
-    --popover-foreground: 40 30% 92%;
-    --primary: 40 80% 50%;
-    --primary-foreground: 20 18% 8%;
-    --secondary: 20 60% 30%;
-    --secondary-foreground: 40 30% 92%;
-    --muted: 20 15% 18%;
-    --muted-foreground: 40 18% 60%;
-    --accent: 0 55% 45%;
-    --accent-foreground: 40 30% 92%;
-    --destructive: 0 84% 60%;
+    color-scheme: dark;
+    --background: 24 16% 10%;
+    --foreground: 38 25% 91%;
+    --card: 24 15% 13%;
+    --card-foreground: 38 25% 91%;
+    --popover: 24 15% 13%;
+    --popover-foreground: 38 25% 91%;
+    --primary: 39 47% 69%;
+    --primary-foreground: 24 17% 12%;
+    --secondary: 24 20% 24%;
+    --secondary-foreground: 38 25% 91%;
+    --muted: 24 12% 20%;
+    --muted-foreground: 38 14% 68%;
+    --accent: 5 42% 57%;
+    --accent-foreground: 24 16% 10%;
+    --destructive: 0 62% 54%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 15% 22%;
-    --input: 20 15% 22%;
-    --ring: 40 80% 50%;
-    --cream: 20 15% 14%;
-    --gold-glow: 40 80% 50%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 24 12% 26%;
+    --input: 24 12% 26%;
+    --ring: 39 50% 65%;
+    --cream: 24 14% 15%;
+    --gold-glow: 39 52% 70%;
+    --sidebar-background: 24 16% 10%;
+    --sidebar-foreground: 38 20% 88%;
+    --sidebar-primary: 39 47% 69%;
+    --sidebar-primary-foreground: 24 17% 12%;
+    --sidebar-accent: 24 12% 19%;
+    --sidebar-accent-foreground: 38 25% 91%;
+    --sidebar-border: 24 12% 26%;
+    --sidebar-ring: 39 50% 65%;
   }
 }
 
@@ -79,10 +81,21 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Crimson Text', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: hsl(var(--secondary) / 0.55);
+    color: hsl(var(--foreground));
   }
 }
 
@@ -114,7 +127,7 @@
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -122,12 +135,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
-  border-radius: 3px;
+  background: hsl(var(--primary) / 0.22);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
+  background: hsl(var(--primary) / 0.38);
+  background-clip: padding-box;
 }
 
 /* Prose styling for markdown */
@@ -157,4 +173,59 @@
   font-size: 1.25rem;
   margin: 1rem 0;
   letter-spacing: 0.5em;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* Use the visible viewport height on mobile browsers with collapsible toolbars. */
+.min-h-screen {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.safe-area-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.chatbot-launcher {
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.chatbot-window {
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+  width: auto;
+  height: min(30rem, calc(100vh - 7.5rem - env(safe-area-inset-bottom)));
+  max-height: calc(100vh - 7.5rem - env(safe-area-inset-bottom));
+}
+
+@supports (height: 100dvh) {
+  .chatbot-window {
+    height: min(30rem, calc(100dvh - 7.5rem - env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - 7.5rem - env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 640px) {
+  .safe-area-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .chatbot-window {
+    left: auto;
+    right: max(1rem, env(safe-area-inset-right));
+    width: min(24rem, calc(100vw - 2rem));
+  }
 }
