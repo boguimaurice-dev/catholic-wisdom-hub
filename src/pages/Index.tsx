@@ -11,12 +11,13 @@ import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { FAQ } from "@/components/FAQ";
 import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
-import { Message } from "@/types/consultation";
+import { ConsultationResult, Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { Chatbot } from "@/components/Chatbot";
 
@@ -44,14 +45,14 @@ export default function Index() {
     scrollToBottom();
   }, [messages, currentPhase]);
 
-  const saveConsultation = async (question: string, result: any) => {
+  const saveConsultation = async (question: string, result: ConsultationResult) => {
     if (!user) return;
     await supabase.from("consultations").insert({
       user_id: user.id,
       question,
       synthesis: result.synthesis,
-      expert_contributions: result.expertContributions,
-      selected_experts: result.analysis.selectedExperts,
+      expert_contributions: result.expertContributions as unknown as Json,
+      selected_experts: result.analysis.selectedExperts as unknown as Json,
       analysis_reason: result.analysis.reason,
     });
   };
@@ -156,7 +157,7 @@ export default function Index() {
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center">
                 <Cross className="w-5 h-5 text-secondary" />
@@ -170,7 +171,7 @@ export default function Index() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-1 sm:justify-end sm:gap-2">
               {currentPlan && (
                 <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary-foreground/10 px-2.5 py-1 rounded-full border border-primary-foreground/20">
                   <BookOpen className="w-3.5 h-3.5" />
@@ -184,35 +185,35 @@ export default function Index() {
               <Link to="/liturgy">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <BookMarked className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Liturgie du jour</span>
+                  <span className="sr-only sm:not-sr-only sm:ml-1">Liturgie du jour</span>
                 </Button>
               </Link>
               <Link to="/pricing">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <CreditCard className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.plans")}</span>
+                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.plans")}</span>
                 </Button>
               </Link>
               <Link to="/donation">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Heart className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.support")}</span>
+                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.support")}</span>
                 </Button>
               </Link>
               <Link to="/history">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <History className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t("header.history")}</span>
+                  <span className="sr-only sm:not-sr-only sm:ml-1">{t("header.history")}</span>
                 </Button>
               </Link>
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={resetConversation} className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" onClick={resetConversation} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="sm" onClick={signOut} aria-label="Déconnexion" title="Déconnexion" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -228,7 +229,7 @@ export default function Index() {
       </div>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto pb-36">
+      <main className="flex-1 overflow-y-auto pb-40 sm:pb-36">
         <div className="max-w-4xl mx-auto p-4">
           {messages.length === 0 ? (
             <>
@@ -269,7 +270,7 @@ export default function Index() {
                   >
                     {message.role === "user" ? (
                       <div className="bg-primary text-primary-foreground p-3.5 sm:p-4 rounded-2xl rounded-br-sm shadow-lg">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base leading-7 sm:text-lg sm:leading-8">{message.content}</p>
                       </div>
                     ) : message.isConsultation && message.consultationResult ? (
                       <div className="relative group">
@@ -290,7 +291,7 @@ export default function Index() {
                       </div>
                     ) : (
                       <div className="relative group bg-card border border-border p-3.5 sm:p-4 rounded-2xl rounded-bl-sm shadow-sm">
-                        <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                        <p className="text-base leading-7 sm:text-lg sm:leading-8">{message.content}</p>
                          <Button
                            variant="outline"
                            size="sm"
@@ -327,7 +328,7 @@ export default function Index() {
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-end">
             <Button
@@ -345,7 +346,7 @@ export default function Index() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? `🎙️ ${t("index.speaking")}` : t("index.placeholder")}
-              className="flex-1 min-h-[44px] max-h-32 resize-none text-sm sm:text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
+              className="flex-1 min-h-[48px] max-h-36 resize-none text-base bg-card border-border focus:border-secondary focus:ring-secondary/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

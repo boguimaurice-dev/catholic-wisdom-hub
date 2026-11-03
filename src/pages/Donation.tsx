@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ArrowLeft, Loader2, Church, CheckCircle2, Sparkles, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,14 +43,7 @@ export default function Donation() {
   const config = currencyConfig[currency];
   const finalAmount = selectedAmount ?? (customAmount ? parseInt(customAmount) : 0);
 
-  useEffect(() => {
-    const reference = searchParams.get("reference") || searchParams.get("trxref");
-    if (reference) {
-      verifyDonation(reference);
-    }
-  }, [searchParams]);
-
-  const verifyDonation = async (reference: string) => {
+  const verifyDonation = useCallback(async (reference: string) => {
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke("paystack-verify", {
@@ -67,7 +60,12 @@ export default function Donation() {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    const reference = searchParams.get("reference") || searchParams.get("trxref");
+    if (reference) void verifyDonation(reference);
+  }, [searchParams, verifyDonation]);
 
   const handleDonate = async () => {
     if (!finalAmount || finalAmount < config.min) {

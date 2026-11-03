@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Check, Crown, Star, Zap, ArrowLeft, Loader2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,7 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
 
-  useEffect(() => {
-    const reference = searchParams.get("reference");
-    if (reference) {
-      verifyPayment(reference);
-    }
-  }, [searchParams]);
-
-  const verifyPayment = async (reference: string) => {
+  const verifyPayment = useCallback(async (reference: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -51,10 +44,15 @@ export default function Pricing() {
         await refresh();
         navigate("/pricing", { replace: true });
       }
-    } catch (err) {
+    } catch {
       toast.error(t("common.error"));
     }
-  };
+  }, [navigate, refresh, t]);
+
+  useEffect(() => {
+    const reference = searchParams.get("reference");
+    if (reference) void verifyPayment(reference);
+  }, [searchParams, verifyPayment]);
 
   const handleSubscribe = async (planSlug: string) => {
     if (planSlug === "basique") return;

@@ -5,6 +5,7 @@ import { ConsultationResult, EXPERTS_CONFIG } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, FileText, Code, FileType, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ConsultationDocumentProps {
   result: ConsultationResult;
@@ -12,14 +13,29 @@ interface ConsultationDocumentProps {
 }
 
 export function ConsultationDocument({ result, question }: ConsultationDocumentProps) {
+  const { t } = useLanguage();
   const [showExpertDetails, setShowExpertDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const roleName = (key: string, fallback: string) => {
+    const translated = t(`agents.${key}`);
+    return translated === `agents.${key}` ? (EXPERTS_CONFIG[key]?.name || fallback) : translated;
+  };
+
+  const roleTitle = (key: string, fallback: string) => {
+    const translated = t(`agentTitles.${key}`);
+    return translated === `agentTitles.${key}` ? (EXPERTS_CONFIG[key]?.title || fallback) : translated;
+  };
+
+  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
+  }[char] || char));
 
   const generatePlainText = () => {
     let text = `CONSULTATION THÉOLOGIQUE\n`;
     text += `${"=".repeat(50)}\n\n`;
     text += `Question: ${question}\n\n`;
-    text += `Experts consultés: ${result.analysis.selectedExperts.map(e => e.name).join(", ")}\n`;
+    text += `Experts consultés: ${result.analysis.selectedExperts.map(e => roleName(e.key, e.name)).join(", ")}\n`;
     text += `Raison: ${result.analysis.reason}\n\n`;
     text += `${"=".repeat(50)}\n`;
     text += `SYNTHÈSE\n`;
@@ -31,7 +47,7 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
       text += `CONTRIBUTIONS DÉTAILLÉES\n`;
       text += `${"=".repeat(50)}\n\n`;
       result.expertContributions.forEach(contrib => {
-        text += `\n--- ${contrib.name} (${contrib.title}) ---\n\n`;
+        text += `\n--- ${roleName(contrib.expert, contrib.name)} (${roleTitle(contrib.expert, contrib.title)}) ---\n\n`;
         text += contrib.response + "\n";
       });
     }
@@ -59,17 +75,17 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
 </head>
 <body>
   <h1>✝️ Consultation Théologique</h1>
-  <div class="question"><strong>Question:</strong> ${question}</div>
+  <div class="question"><strong>Question:</strong> ${escapeHtml(question)}</div>
   <div class="experts">
-    ${result.analysis.selectedExperts.map(e => `<span class="expert-badge">${e.icon || "📚"} ${e.name}</span>`).join("")}
+    ${result.analysis.selectedExperts.map(e => `<span class="expert-badge">${escapeHtml(e.icon || "📚")} ${escapeHtml(roleName(e.key, e.name))}</span>`).join("")}
   </div>
-  <p><em>${result.analysis.reason}</em></p>
+  <p><em>${escapeHtml(result.analysis.reason)}</em></p>
   <h2>Synthèse</h2>
-  <div class="synthesis">${result.synthesis.replace(/\n/g, "<br>")}</div>
+  <div class="synthesis">${escapeHtml(result.synthesis).replace(/\n/g, "<br>")}</div>
   ${result.expertContributions.map(c => `
   <div class="contribution">
-    <div class="contribution-header">${c.name} - ${c.title}</div>
-    <div>${c.response.replace(/\n/g, "<br>")}</div>
+    <div class="contribution-header">${escapeHtml(roleName(c.expert, c.name))} - ${escapeHtml(roleTitle(c.expert, c.title))}</div>
+    <div>${escapeHtml(c.response).replace(/\n/g, "<br>")}</div>
   </div>`).join("")}
 </body>
 </html>`;
@@ -151,21 +167,21 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
             return (
               <span
                 key={expert.key}
-                className={`px-2 py-1 rounded-full text-xs font-medium border ${config?.color || "bg-gray-100"}`}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border ${config?.color || "bg-gray-100"}`}
               >
-                {config?.icon} {expert.name}
+                {config?.icon} {roleName(expert.key, expert.name)}
               </span>
             );
           })}
         </div>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">
+        <p className="text-sm sm:text-base text-muted-foreground mt-3 italic leading-relaxed">
           {result.analysis.reason}
         </p>
       </div>
 
       {/* Synthèse */}
       <div className="p-4 sm:p-6">
-        <div className="prose prose-sm sm:prose max-w-none prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-strong:text-primary">
+        <div className="prose max-w-none text-base leading-7 prose-headings:font-serif prose-headings:text-primary prose-p:text-foreground prose-strong:text-primary sm:text-lg sm:leading-8">
           <ReactMarkdown>{result.synthesis}</ReactMarkdown>
         </div>
       </div>
@@ -206,14 +222,14 @@ export function ConsultationDocument({ result, question }: ConsultationDocumentP
                     <span className="text-xl">{config?.icon}</span>
                     <div>
                       <h4 className="font-serif font-bold text-primary">
-                        {contrib.name}
+                        {roleName(contrib.expert, contrib.name)}
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {contrib.title}
+                      <p className="text-sm text-muted-foreground">
+                        {roleTitle(contrib.expert, contrib.title)}
                       </p>
                     </div>
                   </div>
-                  <div className="prose prose-sm max-w-none text-foreground/90">
+                  <div className="prose max-w-none text-base leading-7 text-foreground/90">
                     <ReactMarkdown>{contrib.response}</ReactMarkdown>
                   </div>
                 </div>

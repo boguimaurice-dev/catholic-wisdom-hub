@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { EXPERTS_CONFIG } from "@/types/consultation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AgentCardProps {
   expertKey: string;
@@ -9,45 +10,46 @@ interface AgentCardProps {
 
 export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) {
   const expert = EXPERTS_CONFIG[expertKey];
+  const { t } = useLanguage();
   if (!expert) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{
-        opacity: 1,
-        scale: isActive ? 1.03 : 1,
-      }}
-      transition={{ duration: 0.25 }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: isActive ? 1.02 : 1 }}
+      transition={{ duration: 0.2 }}
+      role="listitem"
+      aria-label={`${t(`agents.${expertKey}`)} — ${t(`agentTitles.${expertKey}`)}${isActive ? `, ${t("agents.inProgress")}` : ""}${isConsulted ? `, ${t("agents.consulted")}` : ""}`}
       className={`
-        relative p-2.5 sm:p-3 rounded-lg border transition-all duration-300
+        relative flex min-h-[76px] min-w-[132px] snap-start items-center gap-2.5 rounded-xl border p-3 transition-all duration-300
+        md:min-w-0 md:flex-col md:justify-center md:gap-1.5 md:p-3 md:text-center
         ${expert.color}
         ${isActive ? "ring-2 ring-offset-1 ring-secondary shadow-md" : "shadow-sm"}
-        ${isConsulted && !isActive ? "opacity-80" : ""}
+        ${isConsulted && !isActive ? "opacity-90" : ""}
       `}
     >
-      <div className="flex flex-col items-center text-center gap-1">
-        <span className="text-xl sm:text-2xl leading-none">{expert.icon}</span>
-        <div className="min-w-0 w-full">
-          <h3 className="font-serif font-bold text-[10px] sm:text-xs leading-tight truncate">{expert.name}</h3>
-          <p className="text-[9px] sm:text-[10px] opacity-70 truncate">{expert.title}</p>
-        </div>
+      <span aria-hidden="true" className="shrink-0 text-2xl leading-none md:text-2xl">{expert.icon}</span>
+      <div className="min-w-0">
+        <h3 className="font-serif text-xs font-bold leading-snug md:text-sm">
+          {t(`agents.${expertKey}`)}
+        </h3>
+        <p className="mt-0.5 text-xs leading-snug opacity-75 md:text-xs">{t(`agentTitles.${expertKey}`)}</p>
       </div>
       {isActive && (
-        <motion.div
+        <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"
+          aria-hidden="true"
+          className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-green-600 animate-pulse"
         />
       )}
       {isConsulted && !isActive && (
-        <motion.div
+        <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center"
-        >
-          <span className="text-white text-[8px]">✓</span>
-        </motion.div>
+          aria-hidden="true"
+          className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-700 text-[10px] font-bold text-white"
+        >✓</motion.span>
       )}
     </motion.div>
   );
@@ -63,7 +65,11 @@ export function AgentsGrid({
   const expertKeys = Object.keys(EXPERTS_CONFIG);
 
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2">
+    <div
+      role="list"
+      aria-label="Spécialités disponibles"
+      className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-8"
+    >
       {expertKeys.map((key) => (
         <AgentCard
           key={key}

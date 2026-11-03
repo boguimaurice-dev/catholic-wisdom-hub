@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
-import { ConsultationResult } from "@/types/consultation";
+import { ConsultationResult, Expert, ExpertContribution } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -19,8 +19,8 @@ interface SavedConsultation {
   id: string;
   question: string;
   synthesis: string;
-  expert_contributions: any[];
-  selected_experts: any[];
+  expert_contributions: ExpertContribution[];
+  selected_experts: Expert[];
   analysis_reason: string;
   created_at: string;
 }
@@ -32,11 +32,7 @@ export default function History() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) fetchConsultations();
-  }, [user]);
-
-  const fetchConsultations = async () => {
+  const fetchConsultations = useCallback(async () => {
     const { data, error } = await supabase
       .from("consultations")
       .select("*")
@@ -45,14 +41,23 @@ export default function History() {
     if (error) {
       toast.error(t("history.loadError"));
     } else {
-      setConsultations((data || []).map((d: any) => ({
-        ...d,
-        expert_contributions: d.expert_contributions as any[],
-        selected_experts: d.selected_experts as any[],
+      setConsultations((data || []).map((row) => ({
+        ...row,
+        analysis_reason: row.analysis_reason || "",
+        expert_contributions: Array.isArray(row.expert_contributions)
+          ? row.expert_contributions as unknown as ExpertContribution[]
+          : [],
+        selected_experts: Array.isArray(row.selected_experts)
+          ? row.selected_experts as unknown as Expert[]
+          : [],
       })));
     }
     setLoading(false);
-  };
+  }, [t]);
+
+  useEffect(() => {
+    if (user) void fetchConsultations();
+  }, [user, fetchConsultations]);
 
   const deleteConsultation = async (id: string) => {
     const { error } = await supabase.from("consultations").delete().eq("id", id);
