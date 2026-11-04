@@ -38,7 +38,7 @@ export function LandingTestimonials() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="h-full border-border/30 bg-card/80 backdrop-blur-sm hover:shadow-lg transition-all group">
+              <Card className="h-full border-border/30 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all group">
                 <CardContent className="p-7 relative">
                   <Quote className="absolute top-5 right-5 h-8 w-8 text-secondary/15 group-hover:text-secondary/25 transition-colors" />
                   <div className="flex items-center gap-1 mb-5">

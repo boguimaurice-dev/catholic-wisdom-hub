@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { parsePlanFeatures } from "@/lib/planUtils";
 
 interface Plan {
   id: string;
@@ -29,12 +28,12 @@ export function useSubscription() {
   const [dailyUsage, setDailyUsage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    loadData();
+  }, [user]);
 
+  const loadData = async () => {
     setLoading(true);
     try {
       // Load plans
@@ -44,9 +43,9 @@ export function useSubscription() {
         .eq("is_active", true)
         .order("price_amount");
 
-      const parsedPlans = (plansData || []).map((plan) => ({
-        ...plan,
-        features: parsePlanFeatures(plan.features),
+      const parsedPlans = (plansData || []).map((p: any) => ({
+        ...p,
+        features: Array.isArray(p.features) ? p.features : JSON.parse(p.features || "[]"),
       }));
       setPlans(parsedPlans);
 
@@ -54,7 +53,7 @@ export function useSubscription() {
       const { data: subData } = await supabase
         .from("user_subscriptions")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1);
@@ -74,7 +73,7 @@ export function useSubscription() {
       const { data: usageData } = await supabase
         .from("daily_usage")
         .select("consultation_count")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .eq("usage_date", today)
         .single();
 
@@ -84,11 +83,7 @@ export function useSubscription() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  };
 
   const canConsult = () => {
     if (!currentPlan) return true; // fallback allow
