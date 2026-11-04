@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ConsultationDocument } from "@/components/ConsultationDocument";
-import { ConsultationResult, Expert, ExpertContribution } from "@/types/consultation";
+import { ConsultationResult } from "@/types/consultation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +13,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr, enUS, es, pt } from "date-fns/locale";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { TTSControls } from "@/components/TTSControls";
+import { useTTS } from "@/hooks/useVoice";
+import { useSubscription } from "@/hooks/useSubscription";
+import { consultOrchestrator } from "@/services/orchestrator";
 
 const dateLocales = { fr, en: enUS, es, pt };
 
@@ -19,8 +24,8 @@ interface SavedConsultation {
   id: string;
   question: string;
   synthesis: string;
-  expert_contributions: ExpertContribution[];
-  selected_experts: Expert[];
+  expert_contributions: any[];
+  selected_experts: any[];
   analysis_reason: string;
   created_at: string;
 }
@@ -31,8 +36,18 @@ export default function History() {
   const [consultations, setConsultations] = useState<SavedConsultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const tts = useTTS();
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const { canConsult, incrementUsage, currentPlan } = useSubscription();
+  const [deepening, setDeepening] = useState(false);
+  const [deepeningId, setDeepeningId] = useState<string | null>(null);
+  const [deepenings, setDeepenings] = useState<Record<string, { point: string; result: ConsultationResult }[]>>({});
 
-  const fetchConsultations = useCallback(async () => {
+  useEffect(() => {
+    if (user) fetchConsultations();
+  }, [user]);
+
+  const fetchConsultations = async () => {
     const { data, error } = await supabase
       .from("consultations")
       .select("*")
@@ -41,23 +56,14 @@ export default function History() {
     if (error) {
       toast.error(t("history.loadError"));
     } else {
-      setConsultations((data || []).map((row) => ({
-        ...row,
-        analysis_reason: row.analysis_reason || "",
-        expert_contributions: Array.isArray(row.expert_contributions)
-          ? row.expert_contributions as unknown as ExpertContribution[]
-          : [],
-        selected_experts: Array.isArray(row.selected_experts)
-          ? row.selected_experts as unknown as Expert[]
-          : [],
+      setConsultations((data || []).map((d: any) => ({
+        ...d,
+        expert_contributions: d.expert_contributions as any[],
+        selected_experts: d.selected_experts as any[],
       })));
     }
     setLoading(false);
-  }, [t]);
-
-  useEffect(() => {
-    if (user) void fetchConsultations();
-  }, [user, fetchConsultations]);
+  };
 
   const deleteConsultation = async (id: string) => {
     const { error } = await supabase.from("consultations").delete().eq("id", id);
@@ -66,6 +72,38 @@ export default function History() {
     } else {
       setConsultations((prev) => prev.filter((c) => c.id !== id));
       toast.success(t("history.deleted"));
+    }
+  };
+
+  const handleDeepen = async (c: SavedConsultation, point: string) => {
+    if (!point.trim() || deepening) return;
+    if (!canConsult()) {
+      toast.error(t("index.limitReached").replace("{limit}", String(currentPlan?.max_consultations_per_day || 3)));
+      return;
+    }
+    const enriched = `Approfondissement de la synthèse précédente.\n\nQuestion d'origine : ${c.question}\n\nExtrait de la synthèse déjà donnée :\n${c.synthesis.slice(0, 4000)}\n\nPoint à approfondir : ${point.trim()}\n\nApprofondis précisément ce point, sans répéter toute la synthèse.`;
+    setDeepening(true);
+    setDeepeningId(c.id);
+    try {
+      const result = await consultOrchestrator(enriched, []);
+      if (!result.success) throw new Error(result.error || t("common.error"));
+      setDeepenings((prev) => ({ ...prev, [c.id]: [...(prev[c.id] || []), { point: point.trim(), result }] }));
+      if (user) {
+        await supabase.from("consultations").insert({
+          user_id: user.id,
+          question: `🔎 Approfondir : ${point.trim()} (sur : ${c.question})`.slice(0, 1000),
+          synthesis: result.synthesis,
+          expert_contributions: result.expertContributions as any,
+          selected_experts: result.analysis.selectedExperts as any,
+          analysis_reason: result.analysis.reason,
+        });
+      }
+      await incrementUsage();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setDeepening(false);
+      setDeepeningId(null);
     }
   };
 
@@ -79,9 +117,10 @@ export default function History() {
     synthesis: c.synthesis,
   });
 
+  const headerHidden = useHideOnScroll();
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-4 px-4">
+      <header className={`sticky top-0 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : ""} z-40 bg-primary/90 backdrop-blur-sm text-primary-foreground py-3 sm:py-4 px-4 shadow-sm border-b border-secondary/25`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
@@ -130,7 +169,28 @@ export default function History() {
                       <ConsultationDocument
                         result={toConsultationResult(c)}
                         question={c.question}
+                        deepenDisabled={deepening}
+                        stickyDeepen
+                        onDeepen={(point) => handleDeepen(c, point)}
                       />
+                      {(deepenings[c.id] || []).map((d, i) => (
+                        <div key={i} className="space-y-2 pl-2 border-l-2 border-secondary/40">
+                          <p className="text-sm font-medium text-primary">🔎 Approfondir : {d.point}</p>
+                          <ConsultationDocument
+                            result={d.result}
+                            question={d.point}
+                            deepenDisabled={deepening}
+                            stickyDeepen
+                            onDeepen={(p) => handleDeepen({ ...c, synthesis: d.result.synthesis }, p)}
+                          />
+                        </div>
+                      ))}
+                      {deepening && deepeningId === c.id && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground p-3">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Les experts approfondissent ce point…
+                        </div>
+                      )}
+
                     </div>
                   ) : (
                     <div className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors">
@@ -155,6 +215,16 @@ export default function History() {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      <TTSControls
+                        className="mt-3"
+                        size="xs"
+                        status={tts.status}
+                        active={playingId === c.id}
+                        onListen={() => { setPlayingId(c.id); tts.speak(c.synthesis); }}
+                        onPause={tts.pause}
+                        onResume={tts.resume}
+                        onStop={() => { tts.stop(); setPlayingId(null); }}
+                      />
                     </div>
                   )}
                 </motion.div>

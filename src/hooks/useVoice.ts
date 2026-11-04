@@ -1,34 +1,19 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
-interface SpeechRecognitionAlternativeLike { transcript: string }
-interface SpeechRecognitionResultLike { 0: SpeechRecognitionAlternativeLike }
-interface SpeechRecognitionResultsLike { 0: SpeechRecognitionResultLike }
-interface SpeechRecognitionResultEventLike { results: SpeechRecognitionResultsLike }
-interface SpeechRecognitionErrorEventLike { error: string }
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
+type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+
+// The Web Speech API types are not included in TypeScript's standard DOM library.
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
 }
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
-type SpeechRecognitionWindow = Window & {
-  SpeechRecognition?: SpeechRecognitionConstructor;
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-};
 
 export function useVoiceInput() {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const startListening = useCallback((onResult: (text: string) => void) => {
-    const speechWindow = window as SpeechRecognitionWindow;
-    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("La reconnaissance vocale n'est pas supportée par votre navigateur.");
       return;
@@ -39,12 +24,12 @@ export function useVoiceInput() {
     recognition.interimResults = false;
     recognition.continuous = false;
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const text = event.results[0][0].transcript;
       onResult(text);
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
       if (event.error === "not-allowed") {
         toast.error("Veuillez autoriser l'accès au microphone.");
@@ -67,102 +52,172 @@ export function useVoiceInput() {
   return { isListening, startListening, stopListening };
 }
 
+export type TTSStatus = "idle" | "speaking" | "paused";
+
+function cleanForSpeech(text: string) {
+  return text
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/#/g, "")
+    .replace(/\*+/g, "")
+    .replace(/_{1,2}/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`{1,3}[^`]*`{1,3}/g, "")
+    .replace(/>\s*/g, "")
+    .replace(/^[-•]\s*/gm, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitChunks(clean: string) {
+  const sentences = clean.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [clean];
+  const chunks: string[] = [];
+  let current = "";
+  for (const s of sentences) {
+    if ((current + s).length > 200 && current) { chunks.push(current.trim()); current = s; }
+    else current += s;
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
 export function useTTS() {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const cancelledRef = useRef(false);
+  const [status, setStatus] = useState<TTSStatus>("idle");
+  const chunksRef = useRef<string[]>([]);
+  const indexRef = useRef(0);
+  const tokenRef = useRef(0);
+  const statusRef = useRef<TTSStatus>("idle");
+  const wakeLockRef = useRef<any>(null);
+  const keyRef = useRef<string | null>(null);
+  const [progress, setProgress] = useState({ i: 0, n: 0 });
 
-  const speak = useCallback((text: string) => {
-    if (!window.speechSynthesis) {
-      toast.error("La synthèse vocale n'est pas supportée par votre navigateur.");
-      return;
-    }
+  const setS = (s: TTSStatus) => { statusRef.current = s; setStatus(s); };
 
-    const cleanText = text
-      .replace(/#{1,6}\s*/g, "")
-      .replace(/\*\*?/g, "")
-      .replace(/_{1,2}/g, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/`{1,3}[^`]*`{1,3}/g, "")
-      .replace(/>\s*/g, "")
-      .replace(/^[-•]\s*/gm, "")
-      .replace(/\n+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!cleanText) return;
-
-    window.speechSynthesis.cancel();
-    cancelledRef.current = false;
-
-    // Découper en chunks (~200 car.) — Chrome coupe la synthèse au-delà de ~15s
-    const sentences = cleanText.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [cleanText];
-    const chunks: string[] = [];
-    let current = "";
-    for (const s of sentences) {
-      if ((current + s).length > 200 && current) {
-        chunks.push(current.trim());
-        current = s;
-      } else {
-        current += s;
+  const acquireWake = async () => {
+    try {
+      if ("wakeLock" in navigator && !wakeLockRef.current) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+        wakeLockRef.current.addEventListener?.("release", () => { wakeLockRef.current = null; });
       }
-    }
-    if (current.trim()) chunks.push(current.trim());
+    } catch { /* ignoré */ }
+  };
+  const releaseWake = () => {
+    try { wakeLockRef.current?.release?.(); } catch { /* ignoré */ }
+    wakeLockRef.current = null;
+  };
 
-    const pickVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      return voices.find((v) => v.lang.startsWith("fr")) || null;
-    };
+  const playFrom = useCallback((start: number) => {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const token = ++tokenRef.current;
+    const voice = synth.getVoices().find((v) => v.lang.startsWith("fr")) || null;
 
-    const startSpeaking = () => {
-      const frenchVoice = pickVoice();
-
-      const speakChunk = (i: number) => {
-        if (cancelledRef.current || i >= chunks.length) {
-          setIsSpeaking(false);
-          return;
-        }
-        const u = new SpeechSynthesisUtterance(chunks[i]);
-        u.lang = "fr-FR";
-        u.rate = 0.95;
-        u.pitch = 1;
-        if (frenchVoice) u.voice = frenchVoice;
-        u.onend = () => speakChunk(i + 1);
-        u.onerror = (e) => {
-          if (e?.error === "canceled" || e?.error === "interrupted") return;
-          console.error("TTS error:", e?.error);
-          speakChunk(i + 1);
-        };
-        window.speechSynthesis.speak(u);
+    const speakChunk = (i: number) => {
+      if (token !== tokenRef.current) return;
+      if (i >= chunksRef.current.length) {
+        indexRef.current = 0; setS("idle"); releaseWake();
+        if (keyRef.current) try { localStorage.removeItem(keyRef.current); } catch { /* */ }
+        return;
+      }
+      indexRef.current = i;
+      setProgress({ i, n: chunksRef.current.length });
+      if (keyRef.current) try { localStorage.setItem(keyRef.current, String(i)); } catch { /* */ }
+      const u = new SpeechSynthesisUtterance(chunksRef.current[i]);
+      u.lang = "fr-FR"; u.rate = 0.95; u.pitch = 1;
+      if (voice) u.voice = voice;
+      u.onend = () => { if (token === tokenRef.current) speakChunk(i + 1); };
+      u.onerror = (e: any) => {
+        if (token !== tokenRef.current) return;
+        if (e?.error === "canceled" || e?.error === "interrupted") return;
+        speakChunk(i + 1);
       };
-
-      setIsSpeaking(true);
-      speakChunk(0);
+      synth.speak(u);
     };
-
-    // Si les voix ne sont pas encore chargées, attendre
-    if (window.speechSynthesis.getVoices().length === 0) {
-      const handler = () => {
-        window.speechSynthesis.onvoiceschanged = null;
-        startSpeaking();
-      };
-      window.speechSynthesis.onvoiceschanged = handler;
-      // fallback si l'événement ne se déclenche pas
-      setTimeout(() => {
-        if (!cancelledRef.current && !window.speechSynthesis.speaking) {
-          window.speechSynthesis.onvoiceschanged = null;
-          startSpeaking();
-        }
-      }, 250);
-    } else {
-      startSpeaking();
-    }
+    setS("speaking");
+    acquireWake();
+    speakChunk(start);
   }, []);
+
+  const speak = useCallback((text: string, saveKey?: string) => {
+    try {
+      if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+        toast.error("La lecture vocale n'est pas disponible sur ce navigateur. Essayez Chrome ou Safari.");
+        return;
+      }
+      const clean = cleanForSpeech(text || "");
+      if (!clean) return;
+      chunksRef.current = splitChunks(clean);
+      keyRef.current = saveKey ? `tts-pos:${saveKey}` : null;
+      let start = 0;
+      if (keyRef.current) {
+        const s = parseInt(localStorage.getItem(keyRef.current) || "0", 10);
+        if (s > 0 && s < chunksRef.current.length) start = s;
+      }
+      indexRef.current = start;
+      const safePlay = (s: number) => { try { playFrom(s); } catch { setS("idle"); toast.error("Lecture vocale impossible."); } };
+      if (window.speechSynthesis.getVoices().length === 0) {
+        let started = false;
+        const go = () => { if (started) return; started = true; window.speechSynthesis.onvoiceschanged = null; safePlay(start); };
+        window.speechSynthesis.onvoiceschanged = go;
+        setTimeout(go, 250);
+      } else safePlay(start);
+    } catch {
+      setS("idle");
+      toast.error("Lecture vocale impossible sur cet appareil.");
+    }
+  }, [playFrom]);
+
+  const pause = useCallback(() => {
+    if (statusRef.current !== "speaking") return;
+    tokenRef.current++;
+    window.speechSynthesis.cancel();
+    setS("paused");
+    releaseWake();
+  }, []);
+
+  const resume = useCallback(() => {
+    if (!chunksRef.current.length) return;
+    playFrom(indexRef.current);
+  }, [playFrom]);
+
+  const skip = useCallback((delta: number) => {
+    if (!chunksRef.current.length) return;
+    const n = Math.max(0, Math.min(chunksRef.current.length - 1, indexRef.current + delta));
+    indexRef.current = n;
+    setProgress({ i: n, n: chunksRef.current.length });
+    if (keyRef.current) try { localStorage.setItem(keyRef.current, String(n)); } catch { /* */ }
+    if (statusRef.current === "speaking") playFrom(n);
+  }, [playFrom]);
 
   const stop = useCallback(() => {
-    cancelledRef.current = true;
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
+    tokenRef.current++;
+    window.speechSynthesis?.cancel();
+    indexRef.current = 0;
+    setS("idle");
+    releaseWake();
   }, []);
 
-  return { isSpeaking, speak, stop };
+  // Retour d'écran : si le navigateur a coupé la lecture, passer en pause pour pouvoir reprendre
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      if (statusRef.current === "speaking") {
+        const synth = window.speechSynthesis;
+        if (!synth.speaking || synth.paused) {
+          tokenRef.current++;
+          synth.cancel();
+          setS("paused");
+        } else acquireWake();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      tokenRef.current++;
+      window.speechSynthesis?.cancel();
+      releaseWake();
+    };
+  }, []);
+
+  return { status, isSpeaking: status === "speaking", isPaused: status === "paused", speak, pause, resume, stop, skip, progress };
 }

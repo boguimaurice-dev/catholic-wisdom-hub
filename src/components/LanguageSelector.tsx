@@ -18,7 +18,8 @@ export function LanguageSelector({ variant = "default" }: { variant?: "default" 
         <Button
           variant={variant === "ghost" ? "ghost" : "outline"}
           size="sm"
-          className={variant === "ghost" ? "text-primary-foreground hover:bg-primary-foreground/10 gap-1.5" : "gap-1.5"}
+          aria-label={`Langue : ${current?.label || "choisir"}`}
+          className={variant === "ghost" ? "h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-9 sm:w-auto sm:gap-1.5 sm:px-3" : "gap-1.5"}
         >
           <Globe className="w-4 h-4" />
           <span className="hidden sm:inline text-xs">{current?.flag} {current?.code.toUpperCase()}</span>

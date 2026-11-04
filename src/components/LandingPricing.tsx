@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Crown, Star, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { parsePlanFeatures } from "@/lib/planUtils";
 
 interface Plan {
   id: string;
@@ -32,7 +31,11 @@ export function LandingPricing() {
   const [loading, setLoading] = useState(true);
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
 
-  const loadPlans = useCallback(async () => {
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const loadPlans = async () => {
     const { data } = await supabase
       .from("plans")
       .select("*")
@@ -40,17 +43,13 @@ export function LandingPricing() {
       .order("price_amount");
 
     setPlans(
-      (data || []).map((plan) => ({
-        ...plan,
-        features: parsePlanFeatures(plan.features),
+      (data || []).map((p: any) => ({
+        ...p,
+        features: Array.isArray(p.features) ? p.features : JSON.parse(p.features || "[]"),
       }))
     );
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void loadPlans();
-  }, [loadPlans]);
+  };
 
   const handleSubscribe = async (plan: Plan) => {
     // Free plan → go to auth
@@ -99,7 +98,7 @@ export function LandingPricing() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
       {plans.map((plan, i) => {
         const isPopular = plan.slug === "premium";
         return (
