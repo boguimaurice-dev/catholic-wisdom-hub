@@ -1,7 +1,7 @@
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, BookOpen, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
+import { Send, Loader2, BookOpen, BookOpenText, RotateCcw, Cross, History, LogOut, Mic, MicOff, Volume2, VolumeX, Heart, CreditCard, AudioLines, BookMarked } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InstallButton } from "@/components/InstallButton";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -13,7 +13,7 @@ import { ConsultationDocument } from "@/components/ConsultationDocument";
 import { FAQ } from "@/components/FAQ";
 import { ThemeCards } from "@/components/ThemeCards";
 import { consultOrchestrator } from "@/services/orchestrator";
-import { Message } from "@/types/consultation";
+import { ConsultationResult, Message } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useVoiceInput, useTTS } from "@/hooks/useVoice";
@@ -28,6 +28,13 @@ export default function Index() {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [readingMode, setReadingMode] = useState(() => {
+    try {
+      return window.localStorage.getItem("aoc-reading-mode") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeExperts, setActiveExperts] = useState<string[]>([]);
@@ -48,7 +55,7 @@ export default function Index() {
     scrollToBottom();
   }, [messages, currentPhase]);
 
-  const saveConsultation = async (question: string, result: any) => {
+  const saveConsultation = async (question: string, result: ConsultationResult) => {
     if (!user) return;
     await supabase.from("consultations").insert({
       user_id: user.id,
@@ -144,6 +151,18 @@ export default function Index() {
     stopSpeaking();
   };
 
+  const toggleReadingMode = () => {
+    setReadingMode((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem("aoc-reading-mode", String(next));
+      } catch {
+        // Keep the toggle usable when browser storage is unavailable.
+      }
+      return next;
+    });
+  };
+
   const handleVoiceInput = () => {
     if (isListening) {
       stopListening();
@@ -154,7 +173,7 @@ export default function Index() {
 
   const headerHidden = useHideOnScroll();
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <div className={`relative flex min-h-screen flex-col bg-background ${readingMode ? "reading-mode" : ""}`}>
       {/* Decorative background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]" style={{
@@ -196,38 +215,50 @@ export default function Index() {
                 </div>
               )}
               <Link to="/liturgy">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                   <BookMarked className="w-4 h-4" />
-                  <span className="hidden lg:inline ml-1">Liturgie du jour</span>
+                  <span className="sr-only lg:not-sr-only lg:ml-1">Liturgie du jour</span>
                 </Button>
               </Link>
               <Link to="/pricing">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                   <CreditCard className="w-4 h-4" />
-                  <span className="hidden lg:inline ml-1">{t("header.plans")}</span>
+                  <span className="sr-only lg:not-sr-only lg:ml-1">{t("header.plans")}</span>
                 </Button>
               </Link>
               <Link to="/donation">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                   <Heart className="w-4 h-4" />
-                  <span className="hidden lg:inline ml-1">{t("header.support")}</span>
+                  <span className="sr-only lg:not-sr-only lg:ml-1">{t("header.support")}</span>
                 </Button>
               </Link>
               <Link to="/history">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                   <History className="w-4 h-4" />
-                  <span className="hidden lg:inline ml-1">{t("header.history")}</span>
+                  <span className="sr-only lg:not-sr-only lg:ml-1">{t("header.history")}</span>
                 </Button>
               </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleReadingMode}
+                aria-pressed={readingMode}
+                aria-label={readingMode ? "Désactiver le mode lecture" : "Activer le mode lecture"}
+                title={readingMode ? "Désactiver le mode lecture" : "Activer le mode lecture"}
+                className={`h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 lg:h-9 lg:w-auto lg:px-3 ${readingMode ? "bg-primary-foreground/15" : ""}`}
+              >
+                <BookOpenText className="h-4 w-4" />
+                <span className="sr-only lg:not-sr-only lg:ml-1">{readingMode ? "Lecture activée" : "Mode lecture"}</span>
+              </Button>
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={resetConversation} className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="sm" onClick={resetConversation} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               )}
               <LanguageSelector variant="ghost" />
               <ThemeToggle />
               <InstallButton compact />
-              <Button variant="ghost" size="sm" onClick={signOut} className="px-2 sm:px-3 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="sm" onClick={signOut} aria-label="Déconnexion" title="Déconnexion" className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-10 sm:w-10 lg:h-9 lg:w-auto lg:px-3">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -243,8 +274,8 @@ export default function Index() {
       </div>
 
       {/* Chat Area */}
-      <main className="min-h-0 flex-1 overflow-y-auto pb-36">
-        <div className="max-w-4xl mx-auto p-4">
+      <main className="reading-content min-h-0 min-w-0 flex-1 overflow-y-auto pb-40 sm:pb-36">
+        <div className="mx-auto w-full min-w-0 max-w-4xl px-4 py-5 sm:p-4">
           {messages.length === 0 ? (
             <>
               <motion.div
@@ -264,7 +295,7 @@ export default function Index() {
                   {t("index.welcome")}
                 </h2>
                 <div className="ornament" />
-                <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4 leading-relaxed">
+                <p className="mx-auto max-w-md px-2 text-base leading-relaxed text-muted-foreground sm:px-4">
                   {t("index.welcomeDesc")} <span className="text-secondary font-semibold">{t("index.experts")}</span> {t("index.welcomeDesc2")}
                 </p>
               </motion.div>

@@ -19,8 +19,9 @@ export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) 
         scale: isActive ? 1.015 : 1,
       }}
       transition={{ duration: 0.2 }}
+      role="listitem"
       className={`
-        relative p-3 sm:p-3.5 rounded-xl border border-opacity-80 transition-all duration-200
+        relative min-h-[84px] min-w-0 p-2.5 sm:p-3 rounded-xl border border-opacity-80 transition-all duration-200
         ${expert.color}
         ${isActive ? "ring-1 ring-offset-2 ring-secondary/80 shadow-sm" : "shadow-none hover:shadow-sm"}
         ${isConsulted && !isActive ? "opacity-90" : ""}
@@ -29,8 +30,8 @@ export function AgentCard({ expertKey, isActive, isConsulted }: AgentCardProps) 
       <div className="flex flex-col items-center text-center gap-1">
         <span className="text-xl sm:text-2xl leading-none">{expert.icon}</span>
         <div className="min-w-0 w-full">
-          <h3 className="font-serif font-semibold text-[11px] sm:text-xs leading-snug truncate">{expert.name}</h3>
-          <p className="text-[10px] sm:text-[11px] opacity-75 truncate">{expert.title}</p>
+          <h3 className="break-words font-serif font-semibold text-[13px] leading-snug">{expert.name}</h3>
+          <p className="mt-0.5 break-words text-xs leading-snug opacity-75">{expert.title}</p>
         </div>
       </div>
       {isActive && (
@@ -63,7 +64,7 @@ export function AgentsGrid({
   const expertKeys = Object.keys(EXPERTS_CONFIG);
 
   return (
-    <div className="grid grid-cols-2 min-[360px]:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-2.5">
+    <div role="list" aria-label="Spécialités disponibles" className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-8">
       {expertKeys.map((key) => (
         <AgentCard
           key={key}

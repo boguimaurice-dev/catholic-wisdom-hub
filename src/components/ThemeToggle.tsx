@@ -10,7 +10,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       onClick={toggleTheme}
-      className="text-primary-foreground hover:bg-primary-foreground/10"
+      className="h-10 w-10 p-0 text-primary-foreground hover:bg-primary-foreground/10 sm:h-9 sm:w-9"
       title={theme === "dark" ? "Mode clair" : "Mode sombre"}
       aria-label={theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"}
     >

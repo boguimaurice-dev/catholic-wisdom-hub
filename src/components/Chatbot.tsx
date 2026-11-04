@@ -86,8 +86,9 @@ export function Chatbot() {
           }
         }
       }
-    } catch (e: any) {
-      upsertAssistant(`⚠️ ${e.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("chatbot.connectionError");
+      upsertAssistant(`⚠️ ${message}`);
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +107,7 @@ export function Chatbot() {
           >
             <Button
               onClick={() => setOpen(true)}
+              aria-label="Ouvrir l’assistant conversationnel"
               size="icon"
               className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
             >
@@ -130,7 +132,7 @@ export function Chatbot() {
                 <Bot className="w-5 h-5" />
                 <span className="font-serif font-semibold text-sm">{t("chatbot.title")}</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Fermer l’assistant conversationnel" className="h-10 w-10 text-primary-foreground hover:bg-primary-foreground/10">
                 <X className="w-4 h-4" />
               </Button>
             </div>
