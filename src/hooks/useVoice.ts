@@ -3,6 +3,11 @@ import { toast } from "sonner";
 
 type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
 
+// The Web Speech API types are not included in TypeScript's standard DOM library.
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+
 export function useVoiceInput() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -19,7 +24,7 @@ export function useVoiceInput() {
     recognition.interimResults = false;
     recognition.continuous = false;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const text = event.results[0][0].transcript;
       onResult(text);
     };
