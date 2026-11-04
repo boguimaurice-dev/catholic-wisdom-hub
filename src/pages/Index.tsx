@@ -61,8 +61,8 @@ export default function Index() {
       user_id: user.id,
       question,
       synthesis: result.synthesis,
-      expert_contributions: result.expertContributions,
-      selected_experts: result.analysis.selectedExperts,
+      expert_contributions: result.expertContributions as any,
+      selected_experts: result.analysis.selectedExperts as any,
       analysis_reason: result.analysis.reason,
     });
   };
